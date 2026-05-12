@@ -580,8 +580,11 @@ main{max-width:1280px;margin:0 auto;padding:28px 24px;display:grid;gap:22px}
 
 <script>
 const KEY='andrea_cut_v3';
-const START=new Date('2026-05-12');
-const WEDDING=new Date('2026-10-10');
+const START=new Date(2026,4,12); // May 12 2026 local
+const WEDDING=new Date(2026,9,10); // Oct 10 2026 local
+// DEMO DATE — hardcoded to Tuesday May 12, 2026 (using local constructor to avoid timezone shift)
+const DEMO_DATE=new Date(2026,4,12,12,0,0);
+const NOW=()=>new Date(DEMO_DATE.getTime());
 const SW=86.0,GW=77.0;
 const DS=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
 
@@ -606,12 +609,18 @@ function load(){try{return JSON.parse(localStorage.getItem(KEY))||{weeks:{}};}ca
 function persist(d){localStorage.setItem(KEY,JSON.stringify(d));}
 
 function getMon(offset=0){
-  const n=new Date(),dow=n.getDay()===0?6:n.getDay()-1,m=new Date(n);
+  const n=NOW(),dow=n.getDay()===0?6:n.getDay()-1,m=new Date(n);
   m.setDate(n.getDate()-dow+(offset*7));m.setHours(0,0,0,0);return m;
 }
-function wKey(m){return m.toISOString().split('T')[0];}
+function localDateStr(d){
+  const y=d.getFullYear();
+  const m=String(d.getMonth()+1).padStart(2,'0');
+  const day=String(d.getDate()).padStart(2,'0');
+  return `${y}-${m}-${day}`;
+}
+function wKey(m){return localDateStr(m);}
 function fmtDate(d){return d.toLocaleDateString('en-GB',{day:'2-digit',month:'short'});}
-function todayStr(){return new Date().toISOString().split('T')[0];}
+function todayStr(){return localDateStr(NOW());}
 
 function showToast(msg){
   const t=document.getElementById('toast');
@@ -783,7 +792,7 @@ function updateWeekPie(data){
 // ── COUNTDOWN + PHASE ──
 let lastDays=null;
 function updateCountdown(){
-  const d=Math.max(0,Math.ceil((WEDDING-new Date())/864e5));
+  const d=Math.max(0,Math.ceil((WEDDING-NOW())/864e5));
   const el=document.getElementById('daysLeft');
   if(lastDays===null){
     animateInt(el,0,d,1200);
@@ -795,7 +804,7 @@ function updateCountdown(){
   document.getElementById('hcount').innerHTML=`<span>${d}</span> days to go`;
 }
 function updatePhase(){
-  const n=new Date();
+  const n=NOW();
   const p=PHASES.find(x=>n>=x.s&&n<=x.e)||PHASES[PHASES.length-1];
   document.getElementById('phaseIco').textContent=p.ico;
   document.getElementById('phaseTitle').textContent=p.t;
@@ -822,7 +831,7 @@ function updateHero(data){
   document.getElementById('ovBar').style.width=pct+'%';
 
   const totW=Math.ceil((WEDDING-START)/(864e5*7));
-  const elW=Math.min(totW,Math.max(0,Math.ceil((new Date()-START)/(864e5*7))));
+  const elW=Math.min(totW,Math.max(0,Math.ceil((NOW()-START)/(864e5*7))));
   document.getElementById('timePct').textContent=`Week ${elW} / ${totW}`;
   document.getElementById('timeBar').style.width=((elW/totW)*100)+'%';
 
@@ -858,7 +867,7 @@ function buildWeekTable(){
   const today=todayStr();
   document.getElementById('wkBody').innerHTML=DS.map((d,i)=>{
     const date=new Date(mon);date.setDate(mon.getDate()+i);
-    const dStr=date.toISOString().split('T')[0];
+    const dStr=localDateStr(date);
     const isToday=dStr===today;
     const dd=saved.days?.[i]||{};
     const hasSaved=dd.steps||dd.run||dd.cals||dd.macros!==undefined;
