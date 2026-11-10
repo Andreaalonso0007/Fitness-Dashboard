@@ -1,0 +1,35 @@
+name: Polar sync
+on:
+  schedule:
+    - cron: '17 6,12,18,22 * * *'
+  workflow_dispatch:
+    inputs:
+      code:
+        description: 'Polar authorization code (only needed the first time)'
+        required: false
+        default: ''
+permissions:
+  contents: write
+concurrency: polar-sync
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Pull Polar data
+        env:
+          POLAR_CLIENT_ID: ${{ secrets.POLAR_CLIENT_ID }}
+          POLAR_CLIENT_SECRET: ${{ secrets.POLAR_CLIENT_SECRET }}
+          DATA_KEY: ${{ secrets.DATA_KEY }}
+          CODE: ${{ github.event.inputs.code }}
+          REDIRECT_URI: https://andreaalonso0007.github.io/Fitness-Dashboard/
+        run: node scripts/polar-sync.mjs
+      - name: Commit data
+        run: |
+          git config user.name "polar-sync"
+          git config user.email "polar-sync@users.noreply.github.com"
+          git add data
+          git diff --cached --quiet || (git commit -m "Polar data update" && git push)

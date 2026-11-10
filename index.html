@@ -733,6 +733,34 @@ window.addEventListener('DOMContentLoaded',()=>{
   if(bk)bk.addEventListener('click',()=>{const u=URL.createObjectURL(new Blob([JSON.stringify(store,null,1)],{type:'application/json'}));const a=document.createElement('a');a.href=u;a.download='einherjar-backup-'+new Date().toISOString().slice(0,10)+'.json';document.body.appendChild(a);a.click();a.remove();if(m)m.textContent='Backup saved (photos are not included).'});
   if(rs&&fi){rs.addEventListener('click',()=>fi.click());fi.addEventListener('change',async()=>{try{const j=JSON.parse(await fi.files[0].text());if(typeof j!=='object'||!j)throw 0;for(const c in j)store[c]=Object.assign(store[c]||{},j[c]);persist();emit();if(m)m.textContent='Backup restored.'}catch(e){if(m)m.textContent='That file is not a valid backup.'}fi.value=''})}
 });
+/* Polar Loop: encrypted data/polar.enc written by the GitHub sync job */
+(()=>{
+const KN='einherjar:polarkey';
+const b=x=>Uint8Array.from(atob(x),c=>c.charCodeAt(0));
+async function decrypt(txt,pass){const j=JSON.parse(txt);
+  const km=await crypto.subtle.importKey('raw',new TextEncoder().encode(pass),'PBKDF2',false,['deriveKey']);
+  const k=await crypto.subtle.deriveKey({name:'PBKDF2',salt:b(j.salt),iterations:200000,hash:'SHA-256'},km,{name:'AES-GCM',length:256},false,['decrypt']);
+  return JSON.parse(new TextDecoder().decode(await crypto.subtle.decrypt({name:'AES-GCM',iv:b(j.iv)},k,b(j.ct))))}
+function apply(data){
+  store.sync=store.sync||{};store.sync.polar=data;store.weighins=store.weighins||{};
+  for(const n of data.nights||[]){
+    if(n.steps==null&&n.sleepHours==null)continue;
+    const w=store.weighins[n.date]||{date:n.date},auto=w._polar||{};
+    if(n.steps!=null&&(w.steps==null||w.steps===auto.steps)){w.steps=n.steps;auto.steps=n.steps}
+    if(n.sleepHours!=null&&(w.sleep==null||w.sleep===auto.sleep)){w.sleep=n.sleepHours;auto.sleep=n.sleepHours}
+    w._polar=auto;store.weighins[n.date]=w}
+  persist();emit()}
+function ask(txt,msg){const el=document.getElementById('polar');if(!el)return;
+  el.innerHTML='<span class="pill warn">locked</span><p class="muted" style="margin-top:10px">Polar data is available but encrypted. Enter your data passphrase once on this device.</p><form id="pk" class="row" style="gap:8px;margin-top:8px"><input type="password" id="pkv" placeholder="Passphrase" autocomplete="current-password" style="flex:1"><button class="btn" type="submit">Unlock</button></form><p class="msg" id="pkm">'+(msg||'')+'</p>';
+  document.getElementById('pk').addEventListener('submit',async ev=>{ev.preventDefault();const v=document.getElementById('pkv').value;
+    try{apply(await decrypt(txt,v));try{localStorage.setItem(KN,v)}catch(e){}}catch(e){document.getElementById('pkm').textContent='Wrong passphrase.'}})}
+async function load(){
+  let txt;try{const r=await fetch('data/polar.enc?t='+Date.now(),{cache:'no-store'});if(!r.ok)return;txt=await r.text()}catch(e){return}
+  let k=null;try{k=localStorage.getItem(KN)}catch(e){}
+  if(!k){ask(txt);return}
+  try{apply(await decrypt(txt,k))}catch(e){try{localStorage.removeItem(KN)}catch(_){}ask(txt,'Saved passphrase no longer works. Enter it again.')}}
+window.addEventListener('DOMContentLoaded',load);
+})();
 })();
 </script>
 <script>
