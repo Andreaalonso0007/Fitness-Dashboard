@@ -22,7 +22,7 @@ async function link(code){
   if(![200,201,409].includes(u.status)){console.error('User registration failed',u.status,await u.text());process.exit(1)}
   writeFileSync(TOKEN_FILE,enc({token:t.access_token,userId:t.x_user_id}));console.log('Linked Polar account. Registration status',u.status);
 }
-if(CODE)await link(CODE.trim());
+if(CODE&&!existsSync(TOKEN_FILE))await link(CODE.trim());else if(CODE)console.log('Already linked; ignoring the code.');
 if(!existsSync(TOKEN_FILE)){console.error('Not linked yet. Run this workflow with the authorization code.');process.exit(1)}
 const {token}=dec(readFileSync(TOKEN_FILE,'utf8'));
 const get=async p=>{const r=await fetch(API+p,{headers:{Authorization:'Bearer '+token,Accept:'application/json'}});
