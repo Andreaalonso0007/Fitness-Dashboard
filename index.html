@@ -663,15 +663,16 @@ window.__local=true;
 const KEY='einherjar:data:v1';
 const load=()=>{try{return JSON.parse(localStorage.getItem(KEY)||'{}')||{}}catch(e){return{}}};
 let store=load();
-const persist=()=>{try{localStorage.setItem(KEY,JSON.stringify(store))}catch(e){alert('This browser is out of storage space. Use Backup, then clear old data.')}};
+let noPush=false,schedulePush=()=>{};
+const persist=()=>{try{localStorage.setItem(KEY,JSON.stringify(store))}catch(e){alert('This browser is out of storage space. Use Backup, then clear old data.')}if(!noPush)schedulePush()};
 const subs=new Set();
 const emit=()=>subs.forEach(f=>{try{f()}catch(e){}});
 addEventListener('storage',e=>{if(e.key===KEY){store=load();emit()}});
 const snapDoc=(col,id)=>{const d=(store[col]||{})[id];return{id,exists:d!==undefined,data:()=>d===undefined?undefined:JSON.parse(JSON.stringify(d)),metadata:{hasPendingWrites:false}}};
 const docRef=(col,id)=>({
   get:async()=>snapDoc(col,id),
-  set:async v=>{(store[col]=store[col]||{})[id]=JSON.parse(JSON.stringify(v));persist();emit()},
-  delete:async()=>{if(store[col]){delete store[col][id];persist();emit()}},
+  set:async v=>{(store[col]=store[col]||{})[id]={...JSON.parse(JSON.stringify(v)),_u:Date.now()};persist();emit()},
+  delete:async()=>{if(store[col]){delete store[col][id]}(store._del=store._del||{})[col+'/'+id]=Date.now();persist();emit()},
   onSnapshot(ok){const f=()=>ok(snapDoc(col,id));subs.add(f);setTimeout(f,0);return()=>subs.delete(f)}
 });
 const colRef=(col,field,dir)=>({
@@ -712,14 +713,15 @@ function apply(data){
   for(const n of data.nights||[]){
     if(n.steps==null&&n.sleepHours==null)continue;
     const w=store.weighins[n.date]||{date:n.date},auto=w._polar||{};
-    if(n.steps!=null&&(w.steps==null||w.steps===auto.steps)){w.steps=n.steps;auto.steps=n.steps}
-    if(n.sleepHours!=null&&(w.sleep==null||w.sleep===auto.sleep)){w.sleep=n.sleepHours;auto.sleep=n.sleepHours}
-    w._polar=auto;store.weighins[n.date]=w}
+    let chg=false;
+    if(n.steps!=null&&(w.steps==null||w.steps===auto.steps)){if(w.steps!==n.steps)chg=true;w.steps=n.steps;auto.steps=n.steps}
+    if(n.sleepHours!=null&&(w.sleep==null||w.sleep===auto.sleep)){if(w.sleep!==n.sleepHours)chg=true;w.sleep=n.sleepHours;auto.sleep=n.sleepHours}
+    w._polar=auto;if(chg||!store.weighins[n.date])w._u=Date.now();store.weighins[n.date]=w}
   persist();emit()}
 function ask(txt,msg){const el=document.getElementById('polar');if(!el)return;
   el.innerHTML='<span class="pill warn">locked</span><p class="muted" style="margin-top:10px">Polar data is available but encrypted. Enter your data passphrase once on this device.</p><form id="pk" class="row" style="gap:8px;margin-top:8px"><input type="password" id="pkv" placeholder="Passphrase" autocomplete="current-password" style="flex:1"><button class="btn" type="submit">Unlock</button></form><p class="msg" id="pkm">'+(msg||'')+'</p>';
   document.getElementById('pk').addEventListener('submit',async ev=>{ev.preventDefault();const v=document.getElementById('pkv').value;
-    try{apply(await decrypt(txt,v));try{localStorage.setItem(KN,v)}catch(e){}}catch(e){document.getElementById('pkm').textContent='Wrong passphrase.'}})}
+    try{apply(await decrypt(txt,v));try{localStorage.setItem(KN,v)}catch(e){}cloud()}catch(e){document.getElementById('pkm').textContent='Wrong passphrase.'}})}
 const REPO='Andreaalonso0007/Fitness-Dashboard',GH='https://api.github.com/repos/'+REPO,TN='einherjar:ghtoken';
 const lg=k=>{try{return localStorage.getItem(k)}catch(e){return null}};
 async function getFile(fresh){
@@ -733,15 +735,59 @@ async function load(fresh){
   try{apply(await decrypt(txt,k));return true}catch(e){try{localStorage.removeItem(KN)}catch(_){}ask(txt,'Saved passphrase no longer works. Enter it again.');return false}}
 const say=t=>{const m=document.getElementById('syncMsg');if(m)m.textContent=t||''};
 function tokenForm(){const m=document.getElementById('syncMsg');if(!m)return;
-  m.innerHTML='Live pull needs a GitHub token (Actions: read &amp; write, this repo only). <a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener" style="color:var(--emerald-hi)">Create one</a>, then paste: <input type="password" id="ghT" style="width:150px;font-size:14px;padding:4px 6px"> <button type="button" class="btn ghost" id="ghS">Save</button>';
+  m.innerHTML='Syncing across devices and live Polar pulls need a GitHub token (this repo only; permissions: Contents and Actions, both read &amp; write). <a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener" style="color:var(--emerald-hi)">Create one</a>, then paste: <input type="password" id="ghT" style="width:150px;font-size:14px;padding:4px 6px"> <button type="button" class="btn ghost" id="ghS">Save</button>';
   document.getElementById('ghS').addEventListener('click',()=>{const v=document.getElementById('ghT').value.trim();if(!v)return;try{localStorage.setItem(TN,v)}catch(e){}say('Token saved. Press Sync now.')})}
+
+/* ---- cross-device sync: encrypted data/state.enc in the repo ---- */
+const stable=o=>JSON.stringify(o,(k,v)=>v&&typeof v==='object'&&!Array.isArray(v)?Object.keys(v).sort().reduce((a,x)=>(a[x]=v[x],a),{}):v);
+const b64=u=>{let s='';for(let i=0;i<u.length;i+=8192)s+=String.fromCharCode.apply(null,u.subarray(i,i+8192));return btoa(s)};
+async function encrypt(obj,pass){const salt=crypto.getRandomValues(new Uint8Array(16)),iv=crypto.getRandomValues(new Uint8Array(12));
+  const km=await crypto.subtle.importKey('raw',new TextEncoder().encode(pass),'PBKDF2',false,['deriveKey']);
+  const k=await crypto.subtle.deriveKey({name:'PBKDF2',salt,iterations:200000,hash:'SHA-256'},km,{name:'AES-GCM',length:256},false,['encrypt']);
+  const ct=new Uint8Array(await crypto.subtle.encrypt({name:'AES-GCM',iv},k,new TextEncoder().encode(JSON.stringify(obj))));
+  return JSON.stringify({v:1,salt:b64(salt),iv:b64(iv),ct:b64(ct)})}
+Object.defineProperty(window,'__cloud',{get:()=>!!(lg(KN)&&lg(TN))});
+const snap=()=>{const ci={};for(const id in store.checkins||{})ci[id]={...store.checkins[id],photos:[]};return{weighins:store.weighins||{},checkins:ci,_del:store._del||{}}};
+function merge(r){let ch=false;const D={...(store._del||{})};for(const k in(r._del||{}))D[k]=Math.max(D[k]||0,r._del[k]);
+  for(const col of['weighins','checkins']){store[col]=store[col]||{};const R=r[col]||{},L=store[col];
+    for(const id of new Set([...Object.keys(L),...Object.keys(R)])){
+      const l=L[id],q=R[id];let c=l;
+      if(q&&(!l||(q._u||0)>(l._u||0))){c={...q};
+        if(l&&col==='weighins'){c={...l,...q};if(l.habits||q.habits)c.habits={...(l.habits||{}),...(q.habits||{})}}
+        if(l&&col==='checkins'&&(l.photos||[]).some(Boolean))c.photos=l.photos}
+      const tomb=D[col+'/'+id]||0;
+      if(c&&tomb>(c._u||0)){if(l!==undefined){delete L[id];ch=true}continue}
+      if(c&&c!==l){L[id]=c;ch=true}}}
+  store._del=D;if(ch){noPush=true;persist();noPush=false;emit()}}
+async function ghFile(tok){const r=await fetch(GH+'/contents/data/state.enc?ref=main&t='+Date.now(),{headers:{Authorization:'Bearer '+tok,Accept:'application/vnd.github+json'},cache:'no-store'});
+  if(r.status===404)return null;if(!r.ok)throw new Error('read '+r.status);return r.json()}
+let cloudBusy=false,pushTimer=null,cloudMsg='';
+async function cloud(){
+  const key=lg(KN),tok=lg(TN);if(!key||!tok||cloudBusy)return false;cloudBusy=true;
+  try{
+    for(let attempt=0;attempt<2;attempt++){
+      const f=await ghFile(tok);let remote=null;
+      if(f)remote=await decrypt(atob(String(f.content).replace(/\s/g,'')),key);
+      if(remote)merge(remote);
+      const mine=snap();
+      if(remote&&stable({weighins:remote.weighins||{},checkins:remote.checkins||{},_del:remote._del||{}})===stable(mine))break;
+      const body={message:'Dashboard data',content:b64(new TextEncoder().encode(await encrypt({v:1,...mine},key))),branch:'main'};if(f)body.sha=f.sha;
+      const r=await fetch(GH+'/contents/data/state.enc',{method:'PUT',headers:{Authorization:'Bearer '+tok,Accept:'application/vnd.github+json'},body:JSON.stringify(body)});
+      if(r.ok)break;if(r.status===401||r.status===403){try{localStorage.removeItem(TN)}catch(e){}throw new Error('token')}
+      if(r.status!==409&&r.status!==422)throw new Error('write '+r.status)}
+    emit();return true
+  }catch(e){if(e&&e.message==='token'){say('That token was not accepted.');tokenForm()}else if(e&&e.name==='OperationError'){}return false}
+  finally{cloudBusy=false}}
+schedulePush=()=>{clearTimeout(pushTimer);pushTimer=setTimeout(cloud,4000)};
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)cloud().then(()=>load(false))});
 let busy=false;
 async function syncNow(){
   if(busy)return;busy=true;const btn=document.getElementById('syncNow');btn.disabled=true;
   try{
     const tok=lg(TN);
     if(!lg(KN)){say('');await load(true);return}
-    if(!tok){say('Refreshing…');const ok=await load(true);say(ok?'Refreshed from the repo. For a live pull from Polar, add a token:':'');tokenForm();return}
+    if(!tok){say('Refreshing…');const ok=await load(true);say(ok?'Refreshed. To sync across devices and pull live from Polar, add a token:':'');tokenForm();return}
+    say('Syncing your data…');await cloud();
     say('Asking Polar for the latest…');
     const t0=Date.now()-5000,H={Authorization:'Bearer '+tok,Accept:'application/vnd.github+json'};
     const r=await fetch(GH+'/actions/workflows/polar-sync.yml/dispatches',{method:'POST',headers:H,body:JSON.stringify({ref:'main'})});
@@ -753,11 +799,11 @@ async function syncNow(){
         const run=(j.workflow_runs||[]).find(w=>new Date(w.created_at).getTime()>=t0);
         if(run&&run.status==='completed'){done=true;if(run.conclusion!=='success'){say('The sync run failed. Check GitHub Actions.');return}}}catch(e){}}
     if(!done){say('Still running. Press Sync now again in a minute.');return}
-    const ok=await load(true);
+    const ok=await load(true);await cloud();
     say(ok?'Updated '+new Date().toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}):'')
   }catch(e){say('Sync failed. Try again.')}
   finally{busy=false;btn.disabled=false}}
-window.addEventListener('DOMContentLoaded',()=>{const b=document.getElementById('syncNow');if(b){b.hidden=false;b.addEventListener('click',syncNow)}load(false)});
+window.addEventListener('DOMContentLoaded',()=>{const b=document.getElementById('syncNow');if(b){b.hidden=false;b.addEventListener('click',syncNow)}cloud().then(()=>load(false))});
 })();
 })();
 </script>
@@ -1338,7 +1384,7 @@ function syncUI(){const el=$('#sync');if(!el)return;let cls='',txt='';
   if(dbOK===false){cls='bad';txt='Not connected — sign in to claude.ai'}
   else if(!navigator.onLine){cls='bad';txt='Offline — changes won’t save'}
   else if(pending>0){cls='busy';txt='Saving…'}
-  else if(live&&lastSync){cls='ok';txt=(window.__local?'Saved on this device · ':'Synced · ')+lastSync.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})}
+  else if(live&&lastSync){cls='ok';txt=(window.__cloud?'Synced across devices · ':window.__local?'Saved on this device · ':'Synced · ')+lastSync.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})}
   else{txt='Connecting…'}
   el.className='sync '+cls;el.querySelector('span').textContent=txt;}
 addEventListener('online',syncUI);addEventListener('offline',syncUI);
