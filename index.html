@@ -345,7 +345,6 @@ nav.tabs button[aria-selected="true"] .trune,nav.tabs button:hover .trune{color:
   <div>
     <h1 class="ti">Einherjar</h1>
     <div class="sub">Siege · Reckoning · Forging</div>
-    <div class="rank" id="rank"><span class="rk" id="rankName">Thrall</span><span class="rbar"><i id="rankBar"></i></span><span class="rx" id="rankNext">—</span></div>
   </div>
   <div class="phase-chip">
     <div class="ph gemtext" id="phaseName">The Muster</div>
@@ -409,8 +408,6 @@ nav.tabs button[aria-selected="true"] .trune,nav.tabs button:hover .trune{color:
         <button class="btn" type="submit">Record</button>
       </form>
       <div class="msg" id="wMsg"></div>
-      <div class="label" style="margin-top:14px">Today's oaths</div>
-      <div class="oaths compact" id="oathsQuick"></div>
     </div>
     <div class="plate">
       <h2 class="ti">The week</h2>
@@ -543,14 +540,6 @@ nav.tabs button[aria-selected="true"] .trune,nav.tabs button:hover .trune{color:
       <p>7.5 h in bed minimum, same wake time daily. Once Polar is linked, a poor night caps that day's training effort (see Intel).</p>
     </div>
   </div>
-  <div class="plate">
-    <h2 class="ti">Forging rations (after the Siege, if ordained)</h2>
-    <p class="muted">Starting points only. The coach and the numbers from Polar, Kahunas and the scale will set the real ones.</p>
-    <div class="tbl"><table><thead><tr><th>Path</th><th class="num">kcal</th><th class="num">Protein</th><th class="num">Carbs</th><th class="num">Fat</th><th>Expected scale</th></tr></thead><tbody>
-      <tr><td>Recomp (maintenance)</td><td class="num mono">~2,500</td><td class="num mono">170 g</td><td class="num mono">290 g</td><td class="num mono">70 g</td><td>Flat ±0.5 kg, waist slowly down</td></tr>
-      <tr><td>Lean bulk</td><td class="num mono">~2,750</td><td class="num mono">165 g</td><td class="num mono">340 g</td><td class="num mono">75 g</td><td>+0.5–1 kg per month</td></tr>
-    </tbody></table></div>
-  </div>
 </section>
 
 <!-- HABITS -->
@@ -568,11 +557,6 @@ nav.tabs button[aria-selected="true"] .trune,nav.tabs button:hover .trune{color:
     </div>
   </div>
   <div class="plate">
-    <h2 class="ti">Honours</h2>
-    <p class="muted">Earned, never given. Every oath kept, weigh-in logged and inspection sealed adds to your honour and raises your rank.</p>
-    <div class="honours" id="honours"></div>
-  </div>
-  <div class="plate">
     <h2 class="ti">The saga</h2>
     <p class="muted">Last 28 days. A lit cell is an oath kept.</p>
     <div class="tbl"><div class="saga" id="saga"></div></div>
@@ -582,7 +566,6 @@ nav.tabs button[aria-selected="true"] .trune,nav.tabs button:hover .trune{color:
 <!-- CAMPAIGN -->
 <section class="panel" id="tab-campaign" hidden>
   <div class="grid g4">
-    <div class="plate"><div class="label">Phase 0 · October</div><h2 class="ti">The Muster</h2><p>Learn every lift at practice loads, log weight daily for a baseline, get the shoulder assessed, link Polar.</p><span class="pill brass" id="p0">active</span></div>
     <div class="plate"><div class="label">Phase I · 1 Nov → 28 Feb</div><h2 class="ti">The Siege</h2><p>Coach plan: 2,201 kcal / 178 g protein, three gym days. Aim for 77 kg by the weekly average, realistically January to February. Keep every heavy lift; losing strength is the warning sign. Shoulder rebuild runs alongside.</p><span class="pill brass" id="p1">active</span></div>
     <div class="plate"><div class="label">Phase II · at 77 kg or 28 Feb</div><h2 class="ti">The Reckoning</h2><p>Two weeks at maintenance (the coach sets the number) to settle water and hormones. Then a full check-in decides the next path.</p><span class="pill brass" id="p2">pending</span></div>
     <div class="plate"><div class="label">Phase III · Jan →</div><h2 class="ti">The Forging</h2><p>Build muscle without crossing 17% body fat. Reassess every 8 weeks.</p><span class="pill brass" id="p3">pending</span></div>
@@ -1021,7 +1004,7 @@ function renderHabits(){
   const today=iso(new Date());if(!hDay)hDay=today;
   $('#hDate').textContent=hDay===today?'Today':new Date(hDay+'T12:00:00').toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'});
   $('#hNext').disabled=hDay>=today;
-  $('#oathsMain').innerHTML=oathHTML(hDay);$('#oathsQuick').innerHTML=oathHTML(today);
+  $('#oathsMain').innerHTML=oathHTML(hDay);
   const days=[...Array(28)].map((_,i)=>shift(today,i-27));
   let g='<div></div>'+days.map(d=>`<div class="dh">${new Date(d+'T12:00:00').getDate()}</div>`).join('')+'<div class="dh">28 d</div>';
   for(const h of HABITS){const dd=days.filter(d=>due(h,d)),n=dd.filter(d=>kept(dayDoc(d),h)).length;
@@ -1142,8 +1125,8 @@ function renderWeights(){
     if(sl==null)$('#sRate').innerHTML=`deadline needs <span style="color:var(--${need>1?'warn':'ok'})">−${fmt(need,2)} kg/week</span>`;}
   $('#siegeBar').style.width=(prog*100).toFixed(1)+'%';$('#siegeLbl').textContent=mustering()?'Siege progress · starts 1 Nov from your weight that morning':`Siege progress · ${Math.round(prog*100)}%`;
   // phase
-  if(mustering()){const d=Math.ceil((START_D-new Date())/864e5);$('#phaseName').textContent='The Muster';$('#phaseCount').textContent=d;$('#phaseUnit').textContent=d===1?'day':'days';$('#phaseSub').textContent='until the Siege begins · 1 Nov';$('#p0').textContent='active';$('#p1').textContent='pending';}
-  else{const d=Math.max(0,Math.ceil((DEADLINE-new Date())/864e5));$('#p0').textContent='complete';
+  if(mustering()){const d=Math.ceil((START_D-new Date())/864e5);$('#phaseName').textContent='The Muster';$('#phaseCount').textContent=d;$('#phaseUnit').textContent=d===1?'day':'days';$('#phaseSub').textContent='until the Siege begins · 1 Nov';$('#p1').textContent='pending';}
+  else{const d=Math.max(0,Math.ceil((DEADLINE-new Date())/864e5));
     if(has&&left<=0){$('#phaseName').textContent='The Reckoning';$('#p1').textContent='complete';$('#p2').textContent='active';$('#phaseCount').textContent='77';$('#phaseUnit').textContent='kg';$('#phaseSub').textContent='target reached';}
     else{$('#phaseName').textContent='The Siege';$('#p1').textContent='active';$('#phaseCount').textContent=d;$('#phaseUnit').textContent='days';$('#phaseSub').textContent='to the 28 Feb window';}}
   // ledger
@@ -1319,31 +1302,7 @@ function renderBfNow(){const el=$('#bfNow');if(!el)return;const c=checkins.find(
 
 
 /* ---------- honour & rank ---------- */
-const RANKS=[['Thrall',0],['Karl',25],['Drengr',75],['Huskarl',160],['Berserkr',300],['Jarl',500],['Einherjar',800]];
-function renderHonour(){
-  const days=allDays.filter(e=>e.date);let xp=0,perfect=0;
-  for(const e of days){const dh=dueH(e.date),n=dh.filter(h=>kept(e,h)).length;xp+=n;if(n===dh.length){xp+=5;perfect++}if(typeof e.kg==='number')xp+=1}
-  xp+=(typeof checkins!=='undefined'?checkins.length:0)*10;
-  let ri=0;RANKS.forEach((r,i)=>{if(xp>=r[1])ri=i});const cur=RANKS[ri],nxt=RANKS[ri+1];
-  $('#rankName').textContent=cur[0];
-  $('#rankBar').style.width=nxt?Math.round((xp-cur[1])/(nxt[1]-cur[1])*100)+'%':'100%';
-  $('#rankNext').textContent=nxt?`${xp} / ${nxt[1]} honour`:`${xp} honour · highest rank`;
-  // honours
-  const t=iso(new Date());
-  const streakAny=()=>{let best=0;for(const h of HABITS){let run=0,prev=null;for(const e of [...days].sort((a,b)=>a.date<b.date?-1:1)){if(kept(e,h)){run=(prev&&shift(prev,1)===e.date)?run+1:1;prev=e.date;best=Math.max(best,run)}else{run=0;prev=null}}}return best};
-  const perfectRun=()=>{let best=0,run=0,prev=null;for(const e of [...days].sort((a,b)=>a.date<b.date?-1:1)){if(dueH(e.date).every(h=>kept(e,h))){run=(prev&&shift(prev,1)===e.date)?run+1:1;prev=e.date;best=Math.max(best,run)}else{run=0;prev=null}}return best};
-  const start=entries.find(e=>e.date>=START),a7=entries.length?avg7(entries.length-1):null,lost=start&&a7!=null?start.kg-a7:0,need=start?start.kg-TARGET:0;
-  const H=[['ᚠ','First oath','Keep any oath',days.some(e=>HABITS.some(h=>kept(e,h)))],
-    ['ᛇ','Iron week','One oath, 7 days running',streakAny()>=7],
-    ['ᛟ','Perfect day','Every oath due in a day',perfect>=1],
-    ['ᛞ','Perfect week','Seven perfect days running',perfectRun()>=7],
-    ['ᛗ','First inspection','Seal an inspection',typeof checkins!=='undefined'&&checkins.length>0],
-    ['ᛊ','Blood price','2 kg down in the Siege',lost>=2],
-    ['ᚱ','Halfway','Half the road to 77 kg',need>0&&lost>=need/2],
-    ['ᛏ','Valhalla','Reach 77 kg',a7!=null&&a7<=TARGET&&!!start],
-    ['ᛃ','Thirty suns','30 days logged',days.length>=30]];
-  $('#honours').innerHTML=H.map(([g,n,d,w])=>`<div class="hon${w?' won':''}"><span class="g" aria-hidden="true">${g}</span><b>${n}</b><small>${w?'Earned':d}</small></div>`).join('');
-}
+function renderHonour(){}
 /* ---------- tabs ---------- */
 const tabs=[...document.querySelectorAll('nav.tabs button')];
 function show(id){tabs.forEach(b=>b.setAttribute('aria-selected',b.dataset.tab===id));document.querySelectorAll('section.panel').forEach(s=>s.hidden=s.id!=='tab-'+id);
