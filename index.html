@@ -609,10 +609,6 @@ nav.tabs button[aria-selected="true"] .trune,nav.tabs button:hover .trune{color:
       <tr><td>Side-lying external rotation</td><td>3×15 with 4 kg</td><td>3×12 with 6 kg</td></tr>
     </tbody></table></div>
   </div>
-<div class="plate">
-    <h2 class="ti">Runes of the campaign</h2>
-    <div class="runes"><div><span class="big rune-glyph">ᛏ</span><b>Tiwaz</b><span class="muted">victory and discipline</span></div><div><span class="big rune-glyph">ᚢ</span><b>Uruz</b><span class="muted">raw strength</span></div><div><span class="big rune-glyph">ᛒ</span><b>Berkano</b><span class="muted">healing and renewal</span></div><div><span class="big rune-glyph">ᛃ</span><b>Jera</b><span class="muted">the harvest of steady effort</span></div><div><span class="big rune-glyph">ᛇ</span><b>Eihwaz</b><span class="muted">endurance</span></div><div><span class="big rune-glyph">ᚱ</span><b>Raidho</b><span class="muted">the journey</span></div><div><span class="big rune-glyph">ᛞ</span><b>Dagaz</b><span class="muted">breakthrough</span></div><div><span class="big rune-glyph">ᚨ</span><b>Ansuz</b><span class="muted">wisdom and signals</span></div></div>
-  </div>
 </section>
 
 <!-- CHECKINS -->
@@ -628,15 +624,6 @@ nav.tabs button[aria-selected="true"] .trune,nav.tabs button:hover .trune{color:
         <li>Front, arms raised to a double-biceps — also checks shoulder symmetry</li>
       </ul>
       <p style="margin-top:10px">Then record weight, waist and neck in the daily log, and seal the inspection below. On iPhone, each slot opens the camera or your photo library.</p>
-    </div>
-    <div class="plate">
-      <h2 class="ti">What every verdict covers</h2>
-      <ul class="clean">
-        <li>Body-fat range from the photos, compared with the tape estimate</li>
-        <li>Visible changes vs. the last check-in: waist, back, delts, chest</li>
-        <li>Left–right shoulder and posture differences</li>
-        <li>Weekly rate vs. the adjustment law, and the action for next week</li>
-      </ul>
     </div>
   </div>
   <div class="plate" id="inspPlate">
@@ -667,17 +654,12 @@ nav.tabs button[aria-selected="true"] .trune,nav.tabs button:hover .trune{color:
 <section class="panel" id="tab-intel" hidden>
   <div class="grid g2">
     <div class="plate">
-      <h2 class="ti">Kahunas</h2>
-      <div id="hevy"><span class="pill brass">coach app</span><p style="margin-top:10px" class="muted">Your coach's app (Kahunas) is the source of truth for the program and your logged sets. It has no automatic sync into this page; the Training tab mirrors the program.</p></div>
-    </div>
-    <div class="plate">
       <h2 class="ti">Polar Loop</h2>
       <div id="polar"><span class="pill warn">not linked</span><p style="margin-top:10px" class="muted">Once linked: sleep score, sleep time, overnight HRV, resting heart rate, and daily steps.</p></div>
     </div>
   </div>
   <div class="plate">
     <h2 class="ti">Readiness law</h2>
-    <p class="muted">Applies automatically once Polar data flows in.</p>
     <div class="light">
       <div><b style="color:var(--ok)">Ready</b>Sleep score 70+ and HRV near your 2-week baseline. Train as written.</div>
       <div><b style="color:var(--warn)">Strained</b>Sleep score 55–69, or HRV clearly below baseline. Keep loads; drop the last set of each exercise.</div>
@@ -1384,7 +1366,7 @@ tabs.forEach(b=>b.addEventListener('click',()=>show(b.dataset.tab)));
 const hashTab=location.hash.slice(1);let saved=null;try{saved=localStorage.getItem('einherjar-tab')}catch(e){}
 if(tabs.some(b=>b.dataset.tab===hashTab))show(hashTab);else if(saved&&tabs.some(b=>b.dataset.tab===saved))show(saved);
 
-renderProgram();renderDecree();renderWeights();renderHabits();renderHevy();
+renderProgram();renderDecree();renderWeights();renderHabits();
 let dayKey=iso(new Date());setInterval(()=>{const k=iso(new Date());if(k!==dayKey){dayKey=k;hDay=k;renderProgram();renderDecree();renderWeights();renderHabits();$('#wDate').value=k}},60000);
 let rsT=null;addEventListener('resize',()=>{clearTimeout(rsT);rsT=setTimeout(drawChart,150)});
 $('#hPrev').addEventListener('click',()=>{hDay=shift(hDay,-1);renderHabits()});
@@ -1432,7 +1414,6 @@ document.getElementById('wSteps').innerHTML=optsFor('steps','');document.getElem
   watch(()=>db.collection('weighins').orderBy('date'),s=>{
     allDays=s.docs.map(d=>d.data()).filter(e=>e&&e.date);entries=allDays.filter(e=>typeof e.kg==='number');renderWeights();renderHabits();});
   watch(()=>db.collection('checkins').orderBy('date','desc'),s=>renderVerdicts(s.docs.map(d=>d.data())));
-  watch(()=>db.doc('sync/hevy'),s=>s.exists&&renderHevy(s.data()));
   watch(()=>db.doc('sync/polar'),s=>s.exists&&renderPolar(s.data()));
   $('#wForm').addEventListener('submit',async ev=>{
     ev.preventDefault();const date=$('#wDate').value;if(!date){msg.textContent='Pick a date.';return;}
