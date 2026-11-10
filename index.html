@@ -1213,12 +1213,13 @@ function renderHevy(d){
 }
 function renderPolar(d){
   if(!d){return;}
-  const today=iso(new Date()),t=(d.nights||[]).find(x=>x.date===today);
+  const today=iso(new Date()),ns=[...(d.nights||[])].filter(x=>x.date<=today).sort((x,y)=>x.date<y.date?-1:1);
+  const night=[...ns].reverse().find(x=>x.sleepScore!=null||x.sleepHours!=null||x.hrv!=null),stepDay=[...ns].reverse().find(x=>x.steps!=null);
   const cell=(l,v,u)=>`<div class="stat"><div class="label">${l}</div><div class="num" style="font-size:30px">${v!=null&&v!==''?esc(v)+(u?`<span class="muted" style="font-size:14px"> ${u}</span>`:''):'<span class="muted">—</span>'}</div></div>`;
+  const when=x=>x.date===today?'today':new Date(x.date+'T12:00:00').toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'});
   $('#polar').innerHTML=`<span class="pill ok">linked</span> <span class="muted mono" style="font-size:12px">updated ${esc(d.updatedAt||'')}</span>
-   <div class="muted mono" style="margin:10px 0 6px;font-size:12px">TODAY · ${esc(today)}</div>
-   ${t?`<div class="grid g2" style="gap:10px">${cell('Sleep score',t.sleepScore)}${cell('Sleep',t.sleepHours?fmt(t.sleepHours):null,'h')}${cell('HRV',t.hrv,'ms')}${cell('Resting HR',t.restingHr,'bpm')}${cell('Steps',t.steps!=null?Number(t.steps).toLocaleString('en-GB'):null)}</div>`
-   :'<p class="muted">No Polar data for today yet. Open the Polar Flow app so your Loop syncs, then press Sync now.</p>'}`;
+   ${night?`<div class="muted mono" style="margin:10px 0 6px;font-size:12px">LAST NIGHT · ${esc(when(night))}</div><div class="grid g2" style="gap:10px">${cell('Sleep score',night.sleepScore)}${cell('Sleep',night.sleepHours?fmt(night.sleepHours):null,'h')}${cell('HRV',night.hrv,'ms')}${cell('Resting HR',night.restingHr,'bpm')}</div>`:'<p class="muted">No sleep data yet. Open the Polar Flow app so your Loop syncs, then press Sync now.</p>'}
+   ${stepDay?`<div class="muted mono" style="margin:12px 0 6px;font-size:12px">STEPS · ${esc(when(stepDay))}</div><div class="grid g2" style="gap:10px">${cell('Steps',Number(stepDay.steps).toLocaleString('en-GB'))}</div>`:''}`;
   const last=(d.nights||[]).slice(-2);
   if(last.length){const s=last[last.length-1].sleepScore;
     if(last.length===2&&last.every(x=>x.sleepScore!=null&&x.sleepScore<55))readiness={cls:'crit',label:'Depleted',note:'Two poor nights: shoulder work and a walk today, lift tomorrow.'};

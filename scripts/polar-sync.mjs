@@ -30,7 +30,7 @@ const get=async p=>{const r=await fetch(API+p,{headers:{Authorization:'Bearer '+
 const [sleep,rech,acts]=await Promise.all([get('/users/sleep'),get('/users/nightly-recharge'),get('/users/activities')]);
 const days={};const D=d=>days[d]||(days[d]={date:d});
 const list=(x,...ks)=>{if(!x)return[];if(Array.isArray(x))return x;for(const k of ks)if(Array.isArray(x[k]))return x[k];return[]};
-for(const n of list(sleep,'nights')){const d=D(n.date);
+for(const n of list(sleep,'nights')){const d=D((n.sleep_end_time||'').slice(0,10)||n.date);
   if(n.sleep_score!=null)d.sleepScore=n.sleep_score;
   const secs=(n.light_sleep||0)+(n.deep_sleep||0)+(n.rem_sleep||0);if(secs)d.sleepHours=Math.round(secs/36)/100}
 for(const r of list(rech,'recharges')){const d=D(r.date);
@@ -38,9 +38,9 @@ for(const r of list(rech,'recharges')){const d=D(r.date);
   if(r.heart_rate_avg!=null)d.restingHr=Math.round(r.heart_rate_avg)}
 for(const a of list(acts)){const day=(a.start_time||'').slice(0,10);if(!day)continue;
   const steps=a.steps??(a.samples&&a.samples.steps&&a.samples.steps.total_steps);if(steps!=null)D(day).steps=steps}
-let old={nights:[]};try{old=dec(readFileSync(DATA_FILE,'utf8'))}catch(e){}
+let old={nights:[]};try{old=dec(readFileSync(DATA_FILE,'utf8'));if(old.schema!==2)old={nights:[]}}catch(e){}
 const merged={};for(const n of old.nights||[])merged[n.date]=n;
 for(const d of Object.values(days))merged[d.date]={...(merged[d.date]||{}),...d};
 const nights=Object.values(merged).sort((a,b)=>a.date<b.date?-1:1).slice(-400);
-writeFileSync(DATA_FILE,enc({updatedAt:new Date().toISOString().slice(0,16).replace('T',' ')+' UTC',nights}));
+writeFileSync(DATA_FILE,enc({schema:2,updatedAt:new Date().toISOString().slice(0,16).replace('T',' ')+' UTC',nights}));
 console.log('Saved',nights.length,'days; newest',nights.at(-1)?.date);
