@@ -137,8 +137,8 @@ td .note{display:block;color:var(--ti);font-size:14px;font-weight:500}
 /* form */
 form.log{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:12px;align-items:end}
 form.log label{display:grid;gap:5px;font-size:12px;color:var(--ti);letter-spacing:.16em;text-transform:uppercase;font-weight:700}
-input{background:#000;border:1px solid var(--ti-dark);border-radius:2px;padding:9px 10px;min-width:0;font-family:var(--f-num);font-size:19px;transition:border-color .2s,box-shadow .2s}
-input:focus{border-color:var(--emerald);box-shadow:0 0 0 3px rgba(8,155,95,.18);outline:none}
+input,select{background:#000;border:1px solid var(--ti-dark);border-radius:2px;padding:9px 10px;min-width:0;font-family:var(--f-num);font-size:19px;transition:border-color .2s,box-shadow .2s}
+input:focus,select:focus{border-color:var(--emerald);box-shadow:0 0 0 3px rgba(8,155,95,.18);outline:none}
 .btn{background:linear-gradient(180deg,#e8edf0,#9aa3aa);color:#000;border:0;border-radius:2px;padding:11px 16px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;cursor:pointer;transition:box-shadow .25s,background .25s}
 .btn:hover{background:linear-gradient(180deg,var(--emerald-hi),var(--emerald));box-shadow:0 0 22px rgba(18,214,140,.55)}
 .btn.ghost{background:none;color:var(--ti);border:1px solid var(--ti-dark);padding:4px 10px;font-size:12px}
@@ -247,9 +247,9 @@ select{background:#000;color:var(--ti-hi);border:1px solid var(--ti-dark);border
 .facts{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0}
 .oath .t{min-width:0;flex:1}
 .qe{display:flex;gap:6px;margin-top:4px}
-.qe input{width:100%;min-width:0;padding:6px 8px;font-size:18px}
+.qe input,.qe select{width:100%;min-width:0;padding:6px 8px;font-size:18px}
 .qe .btn{padding:6px 10px;font-size:11px;letter-spacing:.12em}
-.oaths.compact .qe input{font-size:16px}
+.oaths.compact .qe input,.oaths.compact .qe select{font-size:16px}
 /* emblem: powered by today's oaths (--p from 0 to 1) */
 .sigil{--p:0}
 .sigil svg{position:absolute;inset:0;width:100%;height:100%;overflow:visible;transition:filter .8s;
@@ -398,10 +398,10 @@ nav.tabs button[aria-selected="true"] .trune,nav.tabs button:hover .trune{color:
       <form class="log" id="wForm">
         <label>Date<input type="date" id="wDate" required></label>
         <label>Weight kg<input type="number" id="wKg" step="0.1" min="40" max="200"></label>
-        <label>Steps<input type="number" id="wSteps" step="1" min="0" max="80000"></label>
+        <label>Steps<select id="wSteps"></select></label>
         <label>Kcal<input type="number" id="wKcal" step="1" min="0" max="8000"></label>
         <label>Protein g<input type="number" id="wProt" step="1" min="0" max="500"></label>
-        <label>Sleep h<input type="number" id="wSleep" step="any" min="0" max="16"></label>
+        <label>Sleep h<select id="wSleep"></select></label>
         <label>Shoulder 0–10<input type="number" id="wPain" step="1" min="0" max="10"></label>
         <label>Waist cm<input type="number" id="wWaist" step="0.1" min="50" max="160"></label>
         <label>Neck cm<input type="number" id="wNeck" step="0.1" min="25" max="60"></label>
@@ -939,6 +939,11 @@ const WEEK=[ // Sun..Sat
  {k:'MOVE',t:'Long walk · conditioning',d:'60–90 min walk outdoors, or 10 rounds of 30 s hard / 90 s easy on the rower or bike. Shoulder daily 8 min.'}
 ];
 const DN=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+const SLEEP_OPTS=(()=>{const a=[];for(let h=3;h<=12;h+=.5)a.push(h);return a})();
+const STEP_OPTS=(()=>{const a=[];for(let n=0;n<=30000;n+=500)a.push(n);return a})();
+const optsFor=(f,cur)=>{const base=f==='sleep'?SLEEP_OPTS:STEP_OPTS;const list=cur!==''&&cur!=null&&!base.includes(Number(cur))?[...base,Number(cur)].sort((a,b)=>a-b):base;
+  const lab=n=>f==='sleep'?n+' h':n.toLocaleString('en-GB');
+  return '<option value="">Select…</option>'+list.map(n=>`<option value="${n}"${cur!==''&&cur!=null&&Number(cur)===n?' selected':''}>${lab(n)}</option>`).join('')};
 const HABITS=[
  {k:'sleep',name:'Sleep 7.5 h',r:'ᛚ',auto:e=>e&&e.sleep>=7.5,entry:{f:'sleep',unit:'h',step:'0.25',max:16,mode:'decimal',fmt:v=>v+' h'}},
  {k:'steps',name:'12,000 steps',r:'ᚱ',auto:e=>e&&e.steps>=12000,entry:{f:'steps',unit:'steps',step:'1',max:80000,mode:'numeric',fmt:v=>Number(v).toLocaleString('en-GB')+' steps'}},
@@ -963,10 +968,11 @@ async function saveField(d,f,v){if(!dbRef){$('#wMsg').textContent='Saving is una
   const ref=dbRef.collection('weighins').doc(d);
   try{await saving(async()=>{const cur=await ref.get();await ref.set({...(cur.exists?cur.data():{}),date:d,[f]:v})})}catch(e){$('#wMsg').textContent='That didn\u2019t save. Try again.';renderHabits()}}
 function openEntry(el){if(el.querySelector('.qe'))return;const h=HABITS.find(x=>x.k===el.dataset.h),d=el.dataset.d,e=dayDoc(d),v=e&&e[h.entry.f]!=null?e[h.entry.f]:'';
-  const t=el.querySelector('.t');t.innerHTML=`<form class="qe"><input type="number" inputmode="${h.entry.mode}" step="${h.entry.step}" min="0" max="${h.entry.max}" value="${v}" aria-label="${h.name}" placeholder="${h.entry.unit}"><button type="submit" class="btn">Save</button></form>`;
-  const f=t.querySelector('form'),inp=f.querySelector('input');inp.focus();
-  f.addEventListener('submit',ev=>{ev.preventDefault();const n=parseFloat(inp.value);if(isNaN(n)||n<0||n>h.entry.max){inp.focus();return}
-    const val=h.entry.f==='steps'?Math.round(n):n;el.classList.toggle('on',!!h.auto({[h.entry.f]:val}));t.innerHTML=`${h.name}<small>${h.entry.fmt(val)}</small>`;saveField(d,h.entry.f,val)});
+  const t=el.querySelector('.t');t.innerHTML=`<form class="qe"><select aria-label="${h.name}">${optsFor(h.entry.f,v)}</select></form>`;
+  const f=t.querySelector('form'),inp=f.querySelector('select');inp.focus();
+  const commit=()=>{const n=parseFloat(inp.value);if(isNaN(n)||n<0||n>h.entry.max)return;
+    const val=h.entry.f==='steps'?Math.round(n):n;el.classList.toggle('on',!!h.auto({[h.entry.f]:val}));t.innerHTML=`${h.name}<small>${h.entry.fmt(val)}</small>`;saveField(d,h.entry.f,val)};
+  inp.addEventListener('change',commit);f.addEventListener('submit',ev=>{ev.preventDefault();commit()});
   inp.addEventListener('keydown',ev=>{if(ev.key==='Escape'){renderHabits()}});}
 function renderHabits(){
   const today=iso(new Date());if(!hDay)hDay=today;
@@ -1330,6 +1336,7 @@ function watch(makeRef,onData){let un=null,dead=false;
   return()=>{dead=true;if(un)un()}}
 syncUI();
 
+document.getElementById('wSteps').innerHTML=optsFor('steps','');document.getElementById('wSleep').innerHTML=optsFor('sleep','');
 /* ---------- db ---------- */
 (async()=>{
   const db=window.claude?await window.claude.use('db'):null;
