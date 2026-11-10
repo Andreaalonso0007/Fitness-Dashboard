@@ -419,7 +419,7 @@ nav.tabs button[aria-selected="true"] .trune,nav.tabs button:hover .trune{color:
   </div>
   <div class="plate">
     <h2 class="ti">Ledger</h2>
-    <div class="row" style="margin:-4px 0 10px"><button class="btn ghost" type="button" id="exportBtn" hidden>Export log (CSV)</button><span class="msg" id="exportMsg"></span></div>
+    <div class="row" style="margin:-4px 0 10px"><button class="btn ghost" type="button" id="exportBtn" hidden>Export log (CSV)</button> <button class="btn ghost" type="button" id="bkBtn" hidden>Backup (.json)</button> <button class="btn ghost" type="button" id="rsBtn" hidden>Restore</button><input type="file" id="rsFile" accept="application/json,.json" hidden><span class="msg" id="exportMsg"></span></div>
     <div class="tbl"><table><thead><tr><th>Date</th><th class="num">kg</th><th class="num">7-day</th><th class="num">Steps</th><th class="num">Kcal</th><th class="num">Prot</th><th class="num">Sleep</th><th class="num">Pain</th><th class="num">Waist</th><th class="num">Neck</th><th></th></tr></thead><tbody id="ledger"><tr><td colspan="11" class="muted">No weigh-ins yet. Record your first one above and the descent chart starts drawing.</td></tr></tbody></table></div>
   </div>
 </section>
@@ -688,6 +688,53 @@ nav.tabs button[aria-selected="true"] .trune,nav.tabs button:hover .trune{color:
 <div class="runeband rune" aria-hidden="true" style="margin-top:34px">ᛊᛏᚱᛖᛜᚦ ᛬ ᚺᛟᚾᛟᚢᚱ ᛬ ᛞᛁᛊᚲᛁᛈᛚᛁᚾᛖ</div>
 <footer>Starting assumptions: 175 cm, last known ~86 kg (late August). Numbers update as real data arrives. Not medical advice; the shoulder plan needs a physio's sign-off.</footer>
 </div>
+<script>
+/* Standalone mode: when the page is not running inside Claude, provide a tiny
+   local replacement for window.claude so everything saves in this browser. */
+(()=>{
+if(window.claude)return;
+window.__local=true;
+const KEY='einherjar:data:v1';
+const load=()=>{try{return JSON.parse(localStorage.getItem(KEY)||'{}')||{}}catch(e){return{}}};
+let store=load();
+const persist=()=>{try{localStorage.setItem(KEY,JSON.stringify(store))}catch(e){alert('This browser is out of storage space. Use Backup, then clear old data.')}};
+const subs=new Set();
+const emit=()=>subs.forEach(f=>{try{f()}catch(e){}});
+addEventListener('storage',e=>{if(e.key===KEY){store=load();emit()}});
+const snapDoc=(col,id)=>{const d=(store[col]||{})[id];return{id,exists:d!==undefined,data:()=>d===undefined?undefined:JSON.parse(JSON.stringify(d)),metadata:{hasPendingWrites:false}}};
+const docRef=(col,id)=>({
+  get:async()=>snapDoc(col,id),
+  set:async v=>{(store[col]=store[col]||{})[id]=JSON.parse(JSON.stringify(v));persist();emit()},
+  delete:async()=>{if(store[col]){delete store[col][id];persist();emit()}},
+  onSnapshot(ok){const f=()=>ok(snapDoc(col,id));subs.add(f);setTimeout(f,0);return()=>subs.delete(f)}
+});
+const colRef=(col,field,dir)=>({
+  doc:id=>docRef(col,id),
+  orderBy:(f,d)=>colRef(col,f,d),
+  onSnapshot(ok){
+    const f=()=>{let ids=Object.keys(store[col]||{});
+      if(field)ids.sort((a,b)=>{const x=store[col][a][field],y=store[col][b][field];return(x<y?-1:x>y?1:0)*(dir==='desc'?-1:1)});
+      ok({docs:ids.map(i=>snapDoc(col,i)),metadata:{hasPendingWrites:false}})};
+    subs.add(f);setTimeout(f,0);return()=>subs.delete(f)}
+});
+const db={collection:c=>colRef(c),doc:p=>{const[c,i]=p.split('/');return docRef(c,i)}};
+/* photos: kept in IndexedDB, exposed through object URLs */
+window.__blobUrls={};
+const idb=new Promise((res,rej)=>{try{const r=indexedDB.open('einherjar-assets',1);r.onupgradeneeded=()=>r.result.createObjectStore('a');r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)}catch(e){rej(e)}});
+const tx=async(mode,fn)=>{const d=await idb;return new Promise((res,rej)=>{const t=d.transaction('a',mode);const q=fn(t.objectStore('a'));t.oncomplete=()=>res(q&&q.result);t.onerror=()=>rej(t.error)})};
+idb.then(async()=>{const keys=await tx('readonly',s=>s.getAllKeys());for(const k of keys){const b=await tx('readonly',s=>s.get(k));if(b)window.__blobUrls[k]=URL.createObjectURL(b)}emit()}).catch(()=>{});
+const assets={upload:async b=>{const id='p'+Date.now().toString(36)+Math.random().toString(36).slice(2,8);await tx('readwrite',s=>s.put(b,id));window.__blobUrls[id]=URL.createObjectURL(b);return{id}}};
+const downloads={save:async({filename,data})=>{const u=URL.createObjectURL(data);const a=document.createElement('a');a.href=u;a.download=filename;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),4000)}};
+window.claude={use:async n=>{if(n==='db')return db;if(n==='assets')return assets;if(n==='downloads')return downloads;throw Object.assign(new Error('unavailable'),{code:'unavailable_here'})}};
+/* backup / restore (data lives only in this browser, so keep a copy) */
+window.addEventListener('DOMContentLoaded',()=>{
+  const bk=document.getElementById('bkBtn'),rs=document.getElementById('rsBtn'),fi=document.getElementById('rsFile'),m=document.getElementById('exportMsg');
+  if(bk)bk.hidden=false;if(rs)rs.hidden=false;
+  if(bk)bk.addEventListener('click',()=>{const u=URL.createObjectURL(new Blob([JSON.stringify(store,null,1)],{type:'application/json'}));const a=document.createElement('a');a.href=u;a.download='einherjar-backup-'+new Date().toISOString().slice(0,10)+'.json';document.body.appendChild(a);a.click();a.remove();if(m)m.textContent='Backup saved (photos are not included).'});
+  if(rs&&fi){rs.addEventListener('click',()=>fi.click());fi.addEventListener('change',async()=>{try{const j=JSON.parse(await fi.files[0].text());if(typeof j!=='object'||!j)throw 0;for(const c in j)store[c]=Object.assign(store[c]||{},j[c]);persist();emit();if(m)m.textContent='Backup restored.'}catch(e){if(m)m.textContent='That file is not a valid backup.'}fi.value=''})}
+});
+})();
+</script>
 <script>
 (()=>{
 const sig=document.getElementById('sigil');if(!sig)return;const b1=sig.querySelector('.bolt'),b2=sig.querySelector('.bolt2');
@@ -1190,7 +1237,7 @@ async function sealInspection(){
   finally{btn.disabled=false}}
 $('#inspGo').addEventListener('click',sealInspection);
 $('#inspStop').addEventListener('click',()=>inspCtl&&inspCtl.abort());
-const blob=id=>id?'/_blob/'+id:null;
+const blob=id=>id?((window.__blobUrls&&window.__blobUrls[id])||'/_blob/'+id):null;
 function renderVerdicts(list){
   checkins=list;renderInspMeta();renderHonour();
   if(!list.length){$('#verdicts').innerHTML='<p class="muted">No inspections yet. Inspect every Sunday: weigh-in, waist + neck, four photos. The first one with the new plan sets the baseline.</p>';$('#cmpPlate').hidden=true;renderBfNow();return;}
@@ -1266,7 +1313,7 @@ function syncUI(){const el=$('#sync');if(!el)return;let cls='',txt='';
   if(dbOK===false){cls='bad';txt='Not connected — sign in to claude.ai'}
   else if(!navigator.onLine){cls='bad';txt='Offline — changes won’t save'}
   else if(pending>0){cls='busy';txt='Saving…'}
-  else if(live&&lastSync){cls='ok';txt='Synced · '+lastSync.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})}
+  else if(live&&lastSync){cls='ok';txt=(window.__local?'Saved on this device · ':'Synced · ')+lastSync.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})}
   else{txt='Connecting…'}
   el.className='sync '+cls;el.querySelector('span').textContent=txt;}
 addEventListener('online',syncUI);addEventListener('offline',syncUI);
