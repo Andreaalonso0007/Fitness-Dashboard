@@ -352,6 +352,7 @@ nav.tabs button[aria-selected="true"] .trune,nav.tabs button:hover .trune{color:
     <div class="count"><span class="big num" id="phaseCount">—</span><span class="unit" id="phaseUnit">days</span></div>
     <div class="label" id="phaseSub">until the Siege begins</div>
     <div class="sync" id="sync" role="status" aria-live="polite"><i></i><span>Connecting…</span></div>
+    <div class="row" style="margin-top:8px;gap:8px;align-items:center"><button class="btn ghost" type="button" id="syncNow" hidden>Sync now</button><span class="msg" id="syncMsg" role="status"></span></div>
   </div>
 </header>
 <div class="runeband rune" aria-hidden="true">ᛖᛁᚾᚺᛖᚱᛃᚨᚱ ᛬ ᛊᛁᛖᚷᛖ ᛬ ᚱᛖᚲᚲᛟᚾᛁᛜ ᛬ ᚠᛟᚱᚷᛁᛜ</div>
@@ -754,12 +755,44 @@ function ask(txt,msg){const el=document.getElementById('polar');if(!el)return;
   el.innerHTML='<span class="pill warn">locked</span><p class="muted" style="margin-top:10px">Polar data is available but encrypted. Enter your data passphrase once on this device.</p><form id="pk" class="row" style="gap:8px;margin-top:8px"><input type="password" id="pkv" placeholder="Passphrase" autocomplete="current-password" style="flex:1"><button class="btn" type="submit">Unlock</button></form><p class="msg" id="pkm">'+(msg||'')+'</p>';
   document.getElementById('pk').addEventListener('submit',async ev=>{ev.preventDefault();const v=document.getElementById('pkv').value;
     try{apply(await decrypt(txt,v));try{localStorage.setItem(KN,v)}catch(e){}}catch(e){document.getElementById('pkm').textContent='Wrong passphrase.'}})}
-async function load(){
-  let txt;try{const r=await fetch('data/polar.enc?t='+Date.now(),{cache:'no-store'});if(!r.ok)return;txt=await r.text()}catch(e){return}
-  let k=null;try{k=localStorage.getItem(KN)}catch(e){}
-  if(!k){ask(txt);return}
-  try{apply(await decrypt(txt,k))}catch(e){try{localStorage.removeItem(KN)}catch(_){}ask(txt,'Saved passphrase no longer works. Enter it again.')}}
-window.addEventListener('DOMContentLoaded',load);
+const REPO='Andreaalonso0007/Fitness-Dashboard',GH='https://api.github.com/repos/'+REPO,TN='einherjar:ghtoken';
+const lg=k=>{try{return localStorage.getItem(k)}catch(e){return null}};
+async function getFile(fresh){
+  if(fresh){try{const r=await fetch(GH+'/contents/data/polar.enc?ref=main&t='+Date.now(),{headers:{Accept:'application/vnd.github.raw+json'},cache:'no-store'});if(r.ok)return await r.text()}catch(e){}}
+  try{const r=await fetch('data/polar.enc?t='+Date.now(),{cache:'no-store'});if(r.ok)return await r.text()}catch(e){}
+  return null}
+async function load(fresh){
+  const txt=await getFile(fresh);if(!txt)return false;
+  const k=lg(KN);
+  if(!k){ask(txt);return false}
+  try{apply(await decrypt(txt,k));return true}catch(e){try{localStorage.removeItem(KN)}catch(_){}ask(txt,'Saved passphrase no longer works. Enter it again.');return false}}
+const say=t=>{const m=document.getElementById('syncMsg');if(m)m.textContent=t||''};
+function tokenForm(){const m=document.getElementById('syncMsg');if(!m)return;
+  m.innerHTML='Live pull needs a GitHub token (Actions: read &amp; write, this repo only). <a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener" style="color:var(--emerald-hi)">Create one</a>, then paste: <input type="password" id="ghT" style="width:150px;font-size:14px;padding:4px 6px"> <button type="button" class="btn ghost" id="ghS">Save</button>';
+  document.getElementById('ghS').addEventListener('click',()=>{const v=document.getElementById('ghT').value.trim();if(!v)return;try{localStorage.setItem(TN,v)}catch(e){}say('Token saved. Press Sync now.')})}
+let busy=false;
+async function syncNow(){
+  if(busy)return;busy=true;const btn=document.getElementById('syncNow');btn.disabled=true;
+  try{
+    const tok=lg(TN);
+    if(!lg(KN)){say('');await load(true);return}
+    if(!tok){say('Refreshing…');const ok=await load(true);say(ok?'Refreshed from the repo. For a live pull from Polar, add a token:':'');tokenForm();return}
+    say('Asking Polar for the latest…');
+    const t0=Date.now()-5000,H={Authorization:'Bearer '+tok,Accept:'application/vnd.github+json'};
+    const r=await fetch(GH+'/actions/workflows/polar-sync.yml/dispatches',{method:'POST',headers:H,body:JSON.stringify({ref:'main'})});
+    if(r.status===401||r.status===403||r.status===404){try{localStorage.removeItem(TN)}catch(e){}say('That token was not accepted.');tokenForm();return}
+    if(r.status!==204){say('Could not start the sync ('+r.status+').');return}
+    let done=false;
+    for(let i=0;i<30&&!done;i++){await new Promise(x=>setTimeout(x,3000));
+      try{const q=await fetch(GH+'/actions/workflows/polar-sync.yml/runs?event=workflow_dispatch&per_page=3&t='+Date.now(),{headers:H,cache:'no-store'});const j=await q.json();
+        const run=(j.workflow_runs||[]).find(w=>new Date(w.created_at).getTime()>=t0);
+        if(run&&run.status==='completed'){done=true;if(run.conclusion!=='success'){say('The sync run failed. Check GitHub Actions.');return}}}catch(e){}}
+    if(!done){say('Still running. Press Sync now again in a minute.');return}
+    const ok=await load(true);
+    say(ok?'Updated '+new Date().toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}):'')
+  }catch(e){say('Sync failed. Try again.')}
+  finally{busy=false;btn.disabled=false}}
+window.addEventListener('DOMContentLoaded',()=>{const b=document.getElementById('syncNow');if(b){b.hidden=false;b.addEventListener('click',syncNow)}load(false)});
 })();
 })();
 </script>
@@ -1180,10 +1213,12 @@ function renderHevy(d){
 }
 function renderPolar(d){
   if(!d){return;}
-  const n=(d.nights||[]).slice(-7).reverse();
+  const today=iso(new Date()),t=(d.nights||[]).find(x=>x.date===today);
+  const cell=(l,v,u)=>`<div class="stat"><div class="label">${l}</div><div class="num" style="font-size:30px">${v!=null&&v!==''?esc(v)+(u?`<span class="muted" style="font-size:14px"> ${u}</span>`:''):'<span class="muted">—</span>'}</div></div>`;
   $('#polar').innerHTML=`<span class="pill ok">linked</span> <span class="muted mono" style="font-size:12px">updated ${esc(d.updatedAt||'')}</span>
-   <div class="tbl" style="margin-top:10px"><table><thead><tr><th>Night</th><th class="num">Score</th><th class="num">Sleep</th><th class="num">HRV</th><th class="num">RHR</th><th class="num">Steps</th></tr></thead><tbody>
-   ${n.map(x=>`<tr><td class="mono">${esc(x.date)}</td><td class="num mono">${esc(x.sleepScore??'')}</td><td class="num mono">${x.sleepHours?fmt(x.sleepHours)+' h':''}</td><td class="num mono">${esc(x.hrv??'')}</td><td class="num mono">${esc(x.restingHr??'')}</td><td class="num mono">${x.steps?Number(x.steps).toLocaleString('en-GB'):''}</td></tr>`).join('')||'<tr><td colspan="6" class="muted">No nights yet.</td></tr>'}</tbody></table></div>`;
+   <div class="muted mono" style="margin:10px 0 6px;font-size:12px">TODAY · ${esc(today)}</div>
+   ${t?`<div class="grid g2" style="gap:10px">${cell('Sleep score',t.sleepScore)}${cell('Sleep',t.sleepHours?fmt(t.sleepHours):null,'h')}${cell('HRV',t.hrv,'ms')}${cell('Resting HR',t.restingHr,'bpm')}${cell('Steps',t.steps!=null?Number(t.steps).toLocaleString('en-GB'):null)}</div>`
+   :'<p class="muted">No Polar data for today yet. Open the Polar Flow app so your Loop syncs, then press Sync now.</p>'}`;
   const last=(d.nights||[]).slice(-2);
   if(last.length){const s=last[last.length-1].sleepScore;
     if(last.length===2&&last.every(x=>x.sleepScore!=null&&x.sleepScore<55))readiness={cls:'crit',label:'Depleted',note:'Two poor nights: shoulder work and a walk today, lift tomorrow.'};
