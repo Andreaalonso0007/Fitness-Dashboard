@@ -310,6 +310,39 @@ nav.tabs button[aria-selected="true"] .trune,nav.tabs button:hover .trune{color:
 .scales.lit{opacity:.5;-webkit-mask-image:radial-gradient(300px circle at var(--cx,50%) var(--cy,30%),#000 0%,rgba(0,0,0,.45) 35%,transparent 70%);mask-image:radial-gradient(300px circle at var(--cx,50%) var(--cy,30%),#000 0%,rgba(0,0,0,.45) 35%,transparent 70%);filter:drop-shadow(0 0 4px rgba(18,214,140,.8))}
 #mist{z-index:0}
 @media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
+/* check-ins (weekly tracker) */
+.cistats{margin-bottom:20px}
+@media (max-width:620px){.cistats{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.cistats .stat{padding:12px}.cistats .stat .v{font-size:34px}.cistats .stat .d{font-size:12px}}
+.cistats .bar{height:6px;margin-top:10px;background:rgba(0,0,0,.6);border:1px solid rgba(154,163,170,.22);border-radius:2px;overflow:hidden}
+.cistats .bar i{display:block;height:100%;background:var(--gem);box-shadow:0 0 12px rgba(18,214,140,.5)}
+.stat .v.down{color:var(--ok)}.stat .v.up{color:var(--warn)}
+.cihead{display:flex;justify-content:space-between;align-items:baseline;gap:12px;flex-wrap:wrap}
+.cihead .mono{font-size:17px}
+.cihint{font-size:14px;margin-top:8px;min-height:1.2em}
+.cinote{margin-top:12px;padding:10px 12px;border:1px solid rgba(232,194,90,.4);color:var(--warn);border-radius:2px;background:rgba(0,0,0,.5);font-size:14px}
+.cinote a{color:var(--warn)}
+.slots.six{grid-template-columns:repeat(6,minmax(0,1fr))}
+@media (max-width:860px){.slots.six{grid-template-columns:repeat(3,minmax(0,1fr))}}
+.slot .rm{position:absolute;top:5px;right:5px;z-index:2;width:26px;height:26px;border-radius:50%;border:1px solid var(--ti-dark);background:rgba(0,0,0,.75);color:var(--ti-hi);font-size:14px;line-height:22px;padding:0;cursor:pointer;display:none}
+.slot.has .rm{display:block}
+.slot .tg{position:absolute;left:5px;bottom:5px;z-index:2;font-size:10px;letter-spacing:.12em;text-transform:uppercase;font-weight:700;padding:1px 6px;background:rgba(0,0,0,.7);border-radius:2px;display:none}
+.slot.has .tg{display:block}
+.cichk{display:flex;gap:8px;align-items:center;margin-top:12px;font-size:14px;color:var(--ti);cursor:pointer}
+.cichk input{width:18px;height:18px;accent-color:var(--emerald)}
+.thumbs.six{grid-template-columns:repeat(6,minmax(0,1fr))}
+@media (max-width:620px){.thumbs.six{grid-template-columns:repeat(3,minmax(0,1fr))}}
+.thumbs img,.cmp img{cursor:zoom-in;background:rgba(0,0,0,.5)}
+.thumbs .miss,.cmp .miss{aspect-ratio:3/4;border:1px dashed rgba(154,163,170,.2);border-radius:2px;display:grid;place-items:center;font-size:11px;color:var(--ti);text-align:center;padding:4px}
+.cmp{grid-template-columns:repeat(3,minmax(0,1fr))}
+@media (max-width:620px){.cmp{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.ciacts{display:flex;gap:8px;margin-top:10px}
+.ciacts .btn.ghost:first-child:hover{color:var(--emerald-hi);border-color:var(--emerald-hi)}
+.cilb{position:fixed;inset:0;z-index:100;background:rgba(0,0,0,.94);display:flex;align-items:center;justify-content:center}
+.cilb img{max-width:92vw;max-height:84vh;border-radius:2px;box-shadow:0 0 40px -10px rgba(18,214,140,.4)}
+.cilb button{position:absolute;background:rgba(0,0,0,.6);border:1px solid var(--ti-dark);color:var(--ti-hi);width:44px;height:44px;border-radius:50%;font-size:20px;cursor:pointer}
+.cilb .x{top:calc(16px + env(safe-area-inset-top,0px));right:16px}.cilb .p{left:12px;top:50%}.cilb .n{right:12px;top:50%}
+.cilb .cap{position:absolute;bottom:calc(18px + env(safe-area-inset-bottom,0px));left:0;right:0;text-align:center;font-size:18px;color:var(--ti-hi)}
+#tab-checkins .down{color:var(--ok)}#tab-checkins .up{color:var(--warn)}
 </style>
 <div class="scales base" aria-hidden="true"></div><div class="scales lit" aria-hidden="true"></div><canvas id="mist" aria-hidden="true"></canvas>
 
@@ -596,42 +629,60 @@ nav.tabs button[aria-selected="true"] .trune,nav.tabs button:hover .trune{color:
 
 <!-- CHECKINS -->
 <section class="panel" id="tab-checkins" hidden>
-  <div class="grid g2">
-    <div class="plate">
-      <h2 class="ti">Inspection protocol</h2>
-      <p>Sunday morning, after the bathroom, before eating. Same spot, same light, phone at chest height ~2 m away, 3-second timer, no pump.</p>
-      <ul class="clean">
-        <li>Front, relaxed, arms by sides</li>
-        <li>Side (right), relaxed</li>
-        <li>Back, relaxed</li>
-        <li>Front, arms raised to a double-biceps — also checks shoulder symmetry</li>
-      </ul>
-      <p style="margin-top:10px">Then record weight, waist and neck in the daily log, and seal the inspection below. On iPhone, each slot opens the camera or your photo library.</p>
-    </div>
-  </div>
+  <div class="grid g3 cistats" id="ciStats"></div>
+
   <div class="plate" id="inspPlate">
-    <h2 class="ti">Seal an inspection</h2>
-    <div class="slots" id="slots">
-      <label class="slot" data-i="0"><input type="file" accept="image/*" hidden><span class="ph">Front</span><img alt=""></label>
-      <label class="slot" data-i="1"><input type="file" accept="image/*" hidden><span class="ph">Side</span><img alt=""></label>
-      <label class="slot" data-i="2"><input type="file" accept="image/*" hidden><span class="ph">Back</span><img alt=""></label>
-      <label class="slot" data-i="3"><input type="file" accept="image/*" hidden><span class="ph">Arms raised</span><img alt=""></label>
-    </div>
-    <div class="inspmeta" id="inspMeta"></div>
+    <div class="cihead"><h2 class="ti">Sunday check-in</h2><span class="muted mono" id="ciNext"></span></div>
+    <p class="muted" style="margin-top:8px">Sunday morning, after the bathroom, before eating. Same spot, same light, phone at chest height ~2 m away, 3-second timer, no pump.</p>
+    <div class="cinote" id="ciEditing" hidden></div>
+    <form class="log" id="ciForm" style="margin-top:14px">
+      <label>Date<input type="date" id="ciDate" required></label>
+      <label>Weight kg<input type="number" id="ciKg" step="0.1" min="40" max="200" inputmode="decimal"></label>
+      <label>Body fat %<input type="number" id="ciBf" step="0.1" min="3" max="60" inputmode="decimal" placeholder="optional"></label>
+      <label>Waist cm<input type="number" id="ciWaist" step="0.1" min="50" max="160" inputmode="decimal"></label>
+      <label>Neck cm<input type="number" id="ciNeck" step="0.1" min="25" max="60" inputmode="decimal"></label>
+    </form>
+    <div class="muted cihint" id="ciTape"></div>
+    <div class="label" style="margin:18px 0 8px">Photos <span class="muted" style="letter-spacing:.08em;text-transform:none;font-weight:500">· tap a slot, or <a href="#" id="ciMany">add several at once</a></span></div>
+    <input type="file" id="ciManyIn" accept="image/*" multiple hidden>
+    <div class="slots six" id="slots"></div>
     <label class="notes">How did the week go? <span class="muted">(optional)</span><textarea id="inspNotes" rows="2" placeholder="Energy, hunger, sleep, how the shoulder felt in training…"></textarea></label>
-    <div class="row"><button class="btn" type="button" id="inspGo">Seal the inspection</button><button class="btn ghost" type="button" id="inspStop" hidden>Stop</button><span class="msg" id="inspMsg"></span></div>
+    <label class="cichk" id="ciSeerRow" hidden><input type="checkbox" id="ciSeer" checked> Ask the seer for a verdict and a body-fat read from the photos</label>
+    <div class="row"><button class="btn" type="button" id="inspGo">Save check-in</button><button class="btn ghost" type="button" id="inspStop" hidden>Stop</button><button class="btn ghost" type="button" id="ciClear">Clear</button><span class="msg" id="inspMsg"></span></div>
     <div class="live" id="inspLive" hidden></div>
   </div>
+
   <div class="plate">
-    <h2 class="ti">Verdicts</h2>
-    <div id="verdicts"><p class="muted">No inspections yet. Inspect every Sunday: weigh-in, waist + neck, four photos. The first one with the new plan sets the baseline.</p></div>
+    <h2 class="ti">Weight &amp; body fat</h2>
+    <div class="legend" style="margin:10px 0 6px"><span style="--c:var(--emerald-hi)">Sunday weight</span><span style="--c:var(--ti-hi)">Body fat %</span><span style="--c:var(--ti)">77 kg goal</span></div>
+    <svg class="chart" id="ciChart" viewBox="0 0 720 260" role="img" aria-label="Check-in weight and body fat trend"></svg>
   </div>
+
   <div class="plate" id="cmpPlate" hidden>
     <h2 class="ti">Before and after</h2>
     <div class="row"><label class="sel">Earlier<select id="cmpA"></select></label><label class="sel">Later<select id="cmpB"></select></label></div>
     <div class="cmp" id="cmp"></div>
   </div>
+
+  <div class="plate">
+    <h2 class="ti">Timeline</h2>
+    <div id="verdicts"><p class="muted">No check-ins yet. Every Sunday: weight, waist + neck, six photos. The first one sets the baseline.</p></div>
+  </div>
+
+  <div class="plate">
+    <h2 class="ti">The six poses</h2>
+    <ul class="clean" style="margin-top:10px">
+      <li>Front, relaxed, arms by sides</li>
+      <li>Front, flexed — double biceps, also checks shoulder symmetry</li>
+      <li>Side left, relaxed</li>
+      <li>Side right, relaxed</li>
+      <li>Back, relaxed</li>
+      <li>Back, flexed — double biceps from behind</li>
+    </ul>
+  </div>
 </section>
+
+<div class="cilb" id="ciLb" hidden><button type="button" class="x" id="ciLbX" aria-label="Close">✕</button><button type="button" class="nv p" id="ciLbP" aria-label="Previous">‹</button><img id="ciLbImg" alt=""><button type="button" class="nv n" id="ciLbN" aria-label="Next">›</button><div class="cap mono" id="ciLbCap"></div></div>
 
 <!-- INTEL -->
 <section class="panel" id="tab-intel" hidden>
@@ -690,7 +741,9 @@ window.__blobUrls={};
 const idb=new Promise((res,rej)=>{try{const r=indexedDB.open('einherjar-assets',1);r.onupgradeneeded=()=>r.result.createObjectStore('a');r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)}catch(e){rej(e)}});
 const tx=async(mode,fn)=>{const d=await idb;return new Promise((res,rej)=>{const t=d.transaction('a',mode);const q=fn(t.objectStore('a'));t.oncomplete=()=>res(q&&q.result);t.onerror=()=>rej(t.error)})};
 idb.then(async()=>{const keys=await tx('readonly',s=>s.getAllKeys());for(const k of keys){const b=await tx('readonly',s=>s.get(k));if(b)window.__blobUrls[k]=URL.createObjectURL(b)}emit()}).catch(()=>{});
-const assets={upload:async b=>{const id='p'+Date.now().toString(36)+Math.random().toString(36).slice(2,8);await tx('readwrite',s=>s.put(b,id));window.__blobUrls[id]=URL.createObjectURL(b);return{id}}};
+let photoPush=()=>{},photoDel=async()=>{};
+const assets={upload:async b=>{const id='p'+Date.now().toString(36)+Math.random().toString(36).slice(2,8);await tx('readwrite',s=>s.put(b,id));window.__blobUrls[id]=URL.createObjectURL(b);photoPush();return{id,url:window.__blobUrls[id]}},
+  delete:async id=>{try{await tx('readwrite',s=>s.delete(id))}catch(e){}if(window.__blobUrls[id]){URL.revokeObjectURL(window.__blobUrls[id]);delete window.__blobUrls[id]}photoDel(id);return{deleted:true}}};
 const downloads={save:async({filename,data})=>{const u=URL.createObjectURL(data);const a=document.createElement('a');a.href=u;a.download=filename;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),4000)}};
 window.claude={use:async n=>{if(n==='db')return db;if(n==='assets')return assets;if(n==='downloads')return downloads;throw Object.assign(new Error('unavailable'),{code:'unavailable_here'})}};
 /* backup / restore (data lives only in this browser, so keep a copy) */
@@ -747,20 +800,54 @@ async function encrypt(obj,pass){const salt=crypto.getRandomValues(new Uint8Arra
   const ct=new Uint8Array(await crypto.subtle.encrypt({name:'AES-GCM',iv},k,new TextEncoder().encode(JSON.stringify(obj))));
   return JSON.stringify({v:1,salt:b64(salt),iv:b64(iv),ct:b64(ct)})}
 Object.defineProperty(window,'__cloud',{get:()=>!!(lg(KN)&&lg(TN))});
-const snap=()=>{const ci={};for(const id in store.checkins||{})ci[id]={...store.checkins[id],photos:[]};return{weighins:store.weighins||{},checkins:ci,_del:store._del||{}}};
+const snap=()=>({weighins:store.weighins||{},checkins:store.checkins||{},_del:store._del||{}});
 function merge(r){let ch=false;const D={...(store._del||{})};for(const k in(r._del||{}))D[k]=Math.max(D[k]||0,r._del[k]);
   for(const col of['weighins','checkins']){store[col]=store[col]||{};const R=r[col]||{},L=store[col];
     for(const id of new Set([...Object.keys(L),...Object.keys(R)])){
       const l=L[id],q=R[id];let c=l;
       if(q&&(!l||(q._u||0)>(l._u||0))){c={...q};
         if(l&&col==='weighins'){c={...l,...q};if(l.habits||q.habits)c.habits={...(l.habits||{}),...(q.habits||{})}}
-        if(l&&col==='checkins'&&(l.photos||[]).some(Boolean))c.photos=l.photos}
+        if(l&&col==='checkins'&&!(c.photos||[]).some(Boolean)&&(l.photos||[]).some(Boolean))c.photos=l.photos}
       const tomb=D[col+'/'+id]||0;
       if(c&&tomb>(c._u||0)){if(l!==undefined){delete L[id];ch=true}continue}
       if(c&&c!==l){L[id]=c;ch=true}}}
   store._del=D;if(ch){noPush=true;persist();noPush=false;emit()}}
 async function ghFile(tok){const r=await fetch(GH+'/contents/data/state.enc?ref=main&t='+Date.now(),{headers:{Authorization:'Bearer '+tok,Accept:'application/vnd.github+json'},cache:'no-store'});
   if(r.status===404)return null;if(!r.ok)throw new Error('read '+r.status);return r.json()}
+/* ---- check-in photos: each one encrypted as data/photos/<id>.enc ---- */
+const PU='einherjar:photos-up',PH=GH+'/contents/data/photos/';
+const upSet=()=>{try{return new Set(JSON.parse(localStorage.getItem(PU)||'[]'))}catch(e){return new Set()}};
+const saveUp=x=>{try{localStorage.setItem(PU,JSON.stringify([...x]))}catch(e){}};
+async function pkey(pass,salt,use){const km=await crypto.subtle.importKey('raw',new TextEncoder().encode(pass),'PBKDF2',false,['deriveKey']);
+  return crypto.subtle.deriveKey({name:'PBKDF2',salt,iterations:200000,hash:'SHA-256'},km,{name:'AES-GCM',length:256},false,[use])}
+async function encBytes(u8,pass){const salt=crypto.getRandomValues(new Uint8Array(16)),iv=crypto.getRandomValues(new Uint8Array(12));
+  const ct=new Uint8Array(await crypto.subtle.encrypt({name:'AES-GCM',iv},await pkey(pass,salt,'encrypt'),u8));
+  return JSON.stringify({v:1,type:'image/jpeg',salt:b64(salt),iv:b64(iv),ct:b64(ct)})}
+async function decBytes(txt,pass){const j=JSON.parse(txt);
+  return new Uint8Array(await crypto.subtle.decrypt({name:'AES-GCM',iv:b(j.iv)},await pkey(pass,b(j.salt),'decrypt'),b(j.ct)))}
+let photoBusy=false,photoAgain=false;
+async function pushPhotos(){const key=lg(KN),tok=lg(TN);if(!key||!tok)return;if(photoBusy){photoAgain=true;return}photoBusy=true;
+  try{const done=upSet();let keys=[];try{keys=await tx('readonly',s=>s.getAllKeys())}catch(e){}
+    for(const id of keys){if(done.has(id))continue;const bl=await tx('readonly',s=>s.get(id));if(!bl)continue;
+      const body=JSON.stringify({message:'Check-in photo',content:b64(new TextEncoder().encode(await encBytes(new Uint8Array(await bl.arrayBuffer()),key))),branch:'main'});
+      let r=null;for(let a=0;a<3;a++){r=await fetch(PH+id+'.enc',{method:'PUT',headers:{Authorization:'Bearer '+tok,Accept:'application/vnd.github+json'},body});
+        if(r.status!==409)break;await new Promise(x=>setTimeout(x,1200+Math.random()*1500))}
+      if(r.ok||r.status===422){done.add(id);saveUp(done)}else break}}
+  catch(e){}finally{photoBusy=false;if(photoAgain){photoAgain=false;setTimeout(pushPhotos,500)}}}
+photoPush=()=>setTimeout(pushPhotos,300);
+photoDel=async id=>{const tok=lg(TN);const d=upSet();d.delete(id);saveUp(d);if(!tok)return;
+  try{const H={Authorization:'Bearer '+tok,Accept:'application/vnd.github+json'};const r=await fetch(PH+id+'.enc?ref=main&t='+Date.now(),{headers:H,cache:'no-store'});if(!r.ok)return;const j=await r.json();
+    await fetch(PH+id+'.enc',{method:'DELETE',headers:H,body:JSON.stringify({message:'Remove check-in photo',sha:j.sha,branch:'main'})})}catch(e){}};
+const pending={},missAt={};
+window.__photo=id=>{if(window.__blobUrls[id])return Promise.resolve(window.__blobUrls[id]);if(pending[id])return pending[id];
+  if(missAt[id]&&Date.now()-missAt[id]<45000)return Promise.resolve(null);
+  return pending[id]=(async()=>{const key=lg(KN);if(!key)return null;const tok=lg(TN);let txt=null;
+    try{const r=await fetch(PH+id+'.enc?ref=main',{headers:{...(tok?{Authorization:'Bearer '+tok}:{}),Accept:'application/vnd.github.raw+json'},cache:'no-store'});if(r.ok)txt=await r.text()}catch(e){}
+    if(!txt){try{const r=await fetch('data/photos/'+id+'.enc',{cache:'no-store'});if(r.ok)txt=await r.text()}catch(e){}}
+    if(!txt){missAt[id]=Date.now();return null}
+    const bl=new Blob([await decBytes(txt,key)],{type:'image/jpeg'});
+    try{await tx('readwrite',s=>s.put(bl,id));const d=upSet();d.add(id);saveUp(d)}catch(e){}
+    return window.__blobUrls[id]=URL.createObjectURL(bl)})().catch(()=>{missAt[id]=Date.now();return null}).finally(()=>{delete pending[id]})};
 let cloudBusy=false,pushTimer=null,cloudMsg='';
 async function cloud(){
   const key=lg(KN),tok=lg(TN);if(!key||!tok||cloudBusy)return false;cloudBusy=true;
@@ -775,7 +862,7 @@ async function cloud(){
       const r=await fetch(GH+'/contents/data/state.enc',{method:'PUT',headers:{Authorization:'Bearer '+tok,Accept:'application/vnd.github+json'},body:JSON.stringify(body)});
       if(r.ok)break;if(r.status===401||r.status===403){try{localStorage.removeItem(TN)}catch(e){}throw new Error('token')}
       if(r.status!==409&&r.status!==422)throw new Error('write '+r.status)}
-    emit();return true
+    emit();pushPhotos();return true
   }catch(e){if(e&&e.message==='token'){say('That token was not accepted.');tokenForm()}else if(e&&e.name==='OperationError'){}return false}
   finally{cloudBusy=false}}
 schedulePush=()=>{clearTimeout(pushTimer);pushTimer=setTimeout(cloud,4000)};
@@ -1002,7 +1089,7 @@ const SESSIONS={
   ['High-pulley triceps extension with bar','2×10–15','RIR 3 · rest 90 s.','Rope pushdown']]}
 };
 const WEEK=[ // Sun..Sat
- {k:'REST',t:'Rest · Inspection · Weekly review',d:'Weigh-in, waist + neck, four photos, Sunday review of the week. Shoulder daily 8 min.'},
+ {k:'REST',t:'Rest · Inspection · Weekly review',d:'Check-in: weigh-in, waist + neck, six photos, Sunday review of the week. Shoulder daily 8 min.'},
  {k:'FA',t:'Full Body A',d:''},
  {k:'MOVE',t:'Walk day',d:'12,000 steps: office walk plus a 30 min evening walk.'+(iso(new Date())>='2026-12-01'?' ISO 27001 course at 18:00.':'')+' Shoulder daily 8 min.'},
  {k:'TO',t:'Torso',d:''},
@@ -1239,8 +1326,20 @@ function renderPolar(d){
     renderDecree();}
 }
 
-/* ---------- inspections ---------- */
-let checkins=[],sampleFn=null,assetsNs=null,inspCtl=null;const shots=[null,null,null,null];const VIEWS=['Front','Side','Back','Arms raised'];
+/* ---------- weekly check-ins ---------- */
+let checkins=[],sampleFn=null,assetsNs=null,inspCtl=null,ciEdit=null,ciDelPending=null;
+const VIEWS=['Front relaxed','Front flexed','Side left','Side right','Back relaxed','Back flexed'];
+const OLD4=['Front','Side','Back','Arms raised'],OLDV={Front:'Front relaxed',Side:'Side right',Back:'Back relaxed','Arms raised':'Front flexed'};
+const shots=VIEWS.map(()=>null); // {blob,url} new photo | {id} stored photo
+const photosOf=c=>{const v=c.views||OLD4;return(c.photos||[]).map((id,j)=>({id,view:OLDV[v[j]]||v[j]})).filter(p=>p.id)};
+const blob=id=>id?((window.__blobUrls&&window.__blobUrls[id])||(window.__local?'':'/_blob/'+id)):'';
+const bfOf=c=>c.bfPct!=null?c.bfPct:(c.bfLow&&c.bfHigh?(c.bfLow+c.bfHigh)/2:null);
+const ciDay=d=>new Date(d+'T12:00:00').toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short',year:'numeric'});
+const ciShort=d=>new Date(d+'T12:00:00').toLocaleDateString('en-GB',{day:'numeric',month:'short'});
+const ciNum=id=>{const v=$(id).value.trim().replace(',','.');if(v==='')return null;const n=parseFloat(v);return isNaN(n)?null:n};
+const imgTag=(id,alt)=>{const u=blob(id);return `<img ${u?`src="${u}" `:''}data-pid="${esc(id)}" alt="${esc(alt)}" loading="lazy" onerror="this.style.opacity=.12">`};
+function hydrate(root){if(!window.__photo)return;
+  root.querySelectorAll('img[data-pid]:not([src])').forEach(im=>{window.__photo(im.dataset.pid).then(u=>{if(u)im.src=u;else im.style.opacity=.12}).catch(()=>{})})}
 async function shrink(file){
   const url=URL.createObjectURL(file);
   try{const img=new Image();img.src=url;await img.decode();
@@ -1250,14 +1349,46 @@ async function shrink(file){
     const d=c.toDataURL('image/jpeg',.86),bin=atob(d.split(',')[1]),u=new Uint8Array(bin.length);for(let k=0;k<bin.length;k++)u[k]=bin.charCodeAt(k);
     return new Blob([u],{type:'image/jpeg'});}
   finally{URL.revokeObjectURL(url)}}
-document.querySelectorAll('#slots .slot').forEach(sl=>{
-  const inp=sl.querySelector('input'),im=sl.querySelector('img'),i=+sl.dataset.i;
-  inp.addEventListener('change',async()=>{const f=inp.files&&inp.files[0];if(!f)return;
-    try{const b=await shrink(f);shots[i]=b;if(im.src)URL.revokeObjectURL(im.src);im.src=URL.createObjectURL(b);sl.classList.add('has');}
-    catch(e){$('#inspMsg').textContent='That photo could not be read. Try a JPEG or PNG.'}});
-});
+
+/* slots */
+function renderSlots(){
+  $('#slots').innerHTML=VIEWS.map((v,i)=>{const s=shots[i],u=s?(s.url||blob(s.id)):'';
+    return `<label class="slot${s?' has':''}" data-i="${i}"><input type="file" accept="image/*" hidden><span class="ph">${v}</span><img alt="${v}" ${u?`src="${u}"`:''} ${s&&s.id?`data-pid="${esc(s.id)}"`:''}><span class="tg">${v}</span><button type="button" class="rm" aria-label="Remove ${v} photo">×</button></label>`}).join('');
+  hydrate($('#slots'));}
+async function setShot(i,f){try{const b=await shrink(f);if(shots[i]&&shots[i].url)URL.revokeObjectURL(shots[i].url);shots[i]={blob:b,url:URL.createObjectURL(b)};return true}
+  catch(e){$('#inspMsg').textContent='That photo could not be read. Try a JPEG or PNG.';return false}}
+$('#slots').addEventListener('change',async ev=>{const sl=ev.target.closest('.slot'),f=ev.target.files&&ev.target.files[0];if(!sl||!f)return;await setShot(+sl.dataset.i,f);renderSlots()});
+$('#slots').addEventListener('click',ev=>{const b=ev.target.closest('.rm');if(!b)return;ev.preventDefault();ev.stopPropagation();
+  const i=+b.closest('.slot').dataset.i;if(shots[i]&&shots[i].url)URL.revokeObjectURL(shots[i].url);shots[i]=null;renderSlots()});
+$('#ciMany').addEventListener('click',ev=>{ev.preventDefault();$('#ciManyIn').value='';$('#ciManyIn').click()});
+$('#ciManyIn').addEventListener('change',async ev=>{for(const f of ev.target.files){const i=shots.findIndex(s=>!s);if(i<0){$('#inspMsg').textContent='All six slots are full. Tap a slot to replace a photo.';break}await setShot(i,f)}renderSlots()});
+
+/* form */
+function ciTape(){const w=ciNum('#ciWaist'),n=ciNum('#ciNeck'),v=w&&n?navy(w,n):null;
+  $('#ciTape').textContent=v!=null?`Tape estimate (Navy formula): ${fmt(v)}% — used if Body fat is left empty.`:'Add waist and neck for a tape body-fat estimate.'}
+function ciPrefill(){if(ciEdit)return;const d=dayDoc($('#ciDate').value);if(!d)return;
+  if(!$('#ciKg').value&&d.kg!=null)$('#ciKg').value=d.kg;if(!$('#ciWaist').value&&d.waist)$('#ciWaist').value=d.waist;if(!$('#ciNeck').value&&d.neck)$('#ciNeck').value=d.neck;ciTape()}
+function ciSync(){const d=$('#ciDate').value,ex=checkins.find(c=>c.date===d),el=$('#ciEditing');
+  if(ex&&ciEdit===d){el.hidden=false;el.textContent=`Editing the check-in from ${ciDay(d)}. Saving updates it.`}
+  else if(ex){el.hidden=false;el.innerHTML=`There is already a check-in for ${esc(ciDay(d))}. <a href="#" id="ciLoadEx">Load it to edit</a>, or saving will replace it.`;
+    $('#ciLoadEx').addEventListener('click',e=>{e.preventDefault();ciLoad(ex)})}
+  else el.hidden=true;}
+function ciReset(date){shots.forEach((s,i)=>{if(s&&s.url)URL.revokeObjectURL(s.url);shots[i]=null});ciEdit=null;
+  $('#ciDate').value=date||iso(new Date());['#ciKg','#ciBf','#ciWaist','#ciNeck','#inspNotes'].forEach(i=>$(i).value='');
+  $('#ciSeer').checked=true;$('#inspMsg').textContent='';$('#inspLive').hidden=true;ciPrefill();ciTape();renderSlots();ciSync()}
+function ciLoad(c){ciReset(c.date);ciEdit=c.date;
+  $('#ciKg').value=c.kg??'';const bf=bfOf(c);$('#ciBf').value=bf!=null?fmt(bf):'';$('#ciWaist').value=c.waist??'';$('#ciNeck').value=c.neck??'';$('#inspNotes').value=c.notes||'';
+  for(const p of photosOf(c)){const i=VIEWS.indexOf(p.view),j=i>=0&&!shots[i]?i:shots.findIndex(s=>!s);if(j>=0)shots[j]={id:p.id}}
+  $('#ciSeer').checked=false;ciTape();renderSlots();ciSync();show('checkins');$('#inspPlate').scrollIntoView({behavior:'smooth',block:'start'})}
+$('#ciDate').addEventListener('change',()=>{if(ciEdit&&ciEdit!==$('#ciDate').value)ciEdit=null;ciPrefill();ciSync()});
+['#ciWaist','#ciNeck'].forEach(i=>$(i).addEventListener('input',ciTape));
+$('#ciClear').addEventListener('click',()=>ciReset());
+(()=>{const d=new Date(),w=d.getDay();if(w===0){$('#ciNext').textContent='Today is check-in day';return}
+  d.setDate(d.getDate()+7-w);$('#ciNext').textContent='Next check-in · '+d.toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'short'})})();
+
+/* the seer (only where Claude can see photos) */
 function inspFacts(){
-  const t=iso(new Date()),today=dayDoc(t)||{},lastW=entries[entries.length-1];
+  const t=iso(new Date()),lastW=entries[entries.length-1];
   const tape=[...allDays].reverse().find(e=>e.waist&&e.neck);
   const a7=entries.length?avg7(entries.length-1):null,wc=weekChange();
   const pn=allDays.filter(e=>(new Date(t)-new Date(e.date))/864e5<7&&e.pain!=null);
@@ -1265,86 +1396,177 @@ function inspFacts(){
   const hab=HABITS.map(h=>`${h.name} ${wk.filter(d=>due(h,d)&&kept(dayDoc(d),h)).length}/${wk.filter(d=>due(h,d)).length}`).join(', ');
   return{date:t,kg:lastW?lastW.kg:null,kg7:a7,week:wc,waist:tape?tape.waist:null,neck:tape?tape.neck:null,
     navy:tape?navy(tape.waist,tape.neck):null,pain:pn.length?pn.reduce((a,e)=>a+e.pain,0)/pn.length:null,habits:hab,phase:mustering()?'The Muster (preparation, before the 1 Nov start)':$('#phaseName').textContent};}
-function renderInspMeta(){const f=inspFacts();
-  $('#inspMeta').innerHTML=[f.kg!=null?`${fmt(f.kg)} kg`:null,f.kg7!=null?`7-day ${fmt(f.kg7)} kg`:null,f.waist?`waist ${fmt(f.waist)} cm`:null,f.navy!=null?`tape ${fmt(f.navy)}%`:null,f.week!=null?`week ${f.week<=0?'−':'+'}${fmt(Math.abs(f.week))} kg`:null]
-    .filter(Boolean).map(x=>`<span>${x}</span>`).join('')||'<span class="muted" style="border:0;background:none;padding:0;font-family:var(--f-body);font-size:14px">Log today’s weight, waist and neck first so the verdict has numbers to work with.</span>';}
-function inspPrompt(f,prev,notes,n){
+function inspPrompt(f,prev,notes,views){
   return `You are the strength coach for "Einherjar", the training campaign of Andrea: male, 175 cm, working towards 77 kg (realistically around Jan-Feb 2027), then a lean bulk or recomp while staying under ~15-17% body fat. He has supraspinatus bursitis in the LEFT shoulder and follows his coach's 3-day plan (Full Body A, Torso, Full Body B on Mon/Wed/Fri, RIR 3-4).
 
-Attached are ${n} check-in photo(s) in this order: ${VIEWS.filter((_,i)=>shots[i]).join(', ')}.
+Attached are ${views.length} check-in photo(s) in this order: ${views.join(', ')}.
 
-Numbers today:
+Numbers for this check-in (${f.date}):
 - Phase: ${f.phase}
-- Latest weight: ${f.kg!=null?fmt(f.kg)+' kg':'not logged'}; 7-day average: ${f.kg7!=null?fmt(f.kg7)+' kg':'n/a'}; change this week: ${f.week!=null?fmt(f.week)+' kg':'n/a'}
+- Weight: ${f.kg!=null?fmt(f.kg)+' kg':'not logged'}; 7-day average: ${f.kg7!=null?fmt(f.kg7)+' kg':'n/a'}; change this week: ${f.week!=null?fmt(f.week)+' kg':'n/a'}
 - Waist ${f.waist?fmt(f.waist)+' cm':'n/a'}, neck ${f.neck?fmt(f.neck)+' cm':'n/a'}, Navy tape body fat ${f.navy!=null?fmt(f.navy)+'%':'n/a'}
 - Shoulder pain last 7 days (0-10 avg): ${f.pain!=null?fmt(f.pain):'n/a'}
 - Habits kept last 7 days: ${f.habits}
-- Previous inspection: ${prev?`${prev.date}, body fat ${prev.bf||'n/a'}, "${(prev.title||'').slice(0,80)}". Its action: ${(prev.action||'none').slice(0,300)}`:'none, this is the first'}
+- Previous check-in: ${prev?`${prev.date}, ${prev.kg!=null?fmt(prev.kg)+' kg, ':''}body fat ${prev.bf||'n/a'}, "${(prev.title||'').slice(0,80)}". Its action: ${(prev.action||'none').slice(0,300)}`:'none, this is the first'}
 - His notes: ${notes||'none'}
 
-Assess the photos honestly and specifically, like a good coach: no flattery, no medical diagnosis. Estimate a body-fat RANGE from the photos (a 2-3 point range), say what is visibly changing or not versus the previous inspection, comment on left vs right shoulder position and posture where visible, and give the action for next week following these rules: weekly 7-day-average loss under 0.4 kg two weeks running = add 2,000 steps first, then ask the coach about trimming ~150 kcal of carbs; 0.4-1.0 kg = change nothing; over 1.0 kg = add ~150 kcal of carbs around training. His coach plan is 2,201 kcal / 178 g protein every day, which is probably close to maintenance, so slow loss is expected.
+Assess the photos honestly and specifically, like a good coach: no flattery, no medical diagnosis. Estimate a body-fat RANGE from the photos (a 2-3 point range), say what is visibly changing or not versus the previous check-in, comment on left vs right shoulder position and posture where visible, and give the action for next week following these rules: weekly 7-day-average loss under 0.4 kg two weeks running = add 2,000 steps first, then ask the coach about trimming ~150 kcal of carbs; 0.4-1.0 kg = change nothing; over 1.0 kg = add ~150 kcal of carbs around training. His coach plan is 2,201 kcal / 178 g protein every day, which is probably close to maintenance, so slow loss is expected.
 
 Reply with ONLY a JSON object, no prose around it:
 {"title": "verdict in at most 6 words, terse war-chief voice", "bf_low": number, "bf_high": number, "verdict": "3 to 5 short paragraphs separated by \\n\\n covering composition, visible changes, how the numbers line up", "shoulder": "one or two sentences on left vs right shoulder and posture", "action": "one to three concrete instructions for next week, or Hold the course"}`;}
+
+/* save */
 async function sealInspection(){
-  const btn=$('#inspGo'),msg=$('#inspMsg'),live=$('#inspLive');const n=shots.filter(Boolean).length;
+  const btn=$('#inspGo'),msg=$('#inspMsg'),live=$('#inspLive');
   if(!dbRef){msg.textContent='Saving is unavailable in this view.';return}
-  if(!n){msg.textContent='Add at least one photo; all four is best.';return}
+  const date=$('#ciDate').value,kg=ciNum('#ciKg');
+  if(!date){msg.textContent='Pick a date.';return}
+  if(kg==null||kg<40||kg>200){msg.textContent='Enter your weight first.';return}
   if(!navigator.onLine){msg.textContent='You are offline. Reconnect first.';return}
-  btn.disabled=true;const f=inspFacts(),notes=$('#inspNotes').value.trim(),prev=checkins.find(c=>c.date<f.date)||null;
-  const doc={date:f.date,kg:f.kg,kg7:f.kg7!=null?+f.kg7.toFixed(2):null,waist:f.waist,neck:f.neck,navy:f.navy!=null?+f.navy.toFixed(1):null,notes,sealedAt:new Date().toISOString(),photos:[]};
+  btn.disabled=true;live.hidden=true;
+  const prevDoc=checkins.find(c=>c.date===date)||null,prev=checkins.find(c=>c.date<date)||null;
+  const waist=ciNum('#ciWaist'),neck=ciNum('#ciNeck'),nv=waist&&neck?navy(waist,neck):null,bfIn=ciNum('#ciBf'),notes=$('#inspNotes').value.trim();
+  const wk=entries.filter(e=>e.date<date&&(new Date(date)-new Date(e.date))/864e5<7).map(e=>e.kg).concat([kg]),kg7=wk.reduce((a,x)=>a+x,0)/wk.length;
+  const doc={...(prevDoc||{}),date,kg,kg7:+kg7.toFixed(2),waist,neck,navy:nv!=null?+nv.toFixed(1):null,notes,views:VIEWS,photos:[],
+    sealedAt:(prevDoc&&prevDoc.sealedAt)||new Date().toISOString(),updatedAt:new Date().toISOString()};
+  delete doc._u;
   try{
-    if(assetsNs){msg.textContent='Storing photos…';
-      for(let i=0;i<4;i++){if(!shots[i]){doc.photos.push(null);continue}
-        try{const r=await saving(()=>assetsNs.upload(shots[i]));doc.photos.push(r.id)}catch(e){doc.photos.push(null)}}}
+    const fresh=shots.filter(s=>s&&s.blob).length;let k=0,lost=0;
+    for(let i=0;i<VIEWS.length;i++){const s=shots[i];
+      if(!s){doc.photos.push(null);continue}
+      if(s.id){doc.photos.push(s.id);continue}
+      if(!assetsNs){doc.photos.push(null);lost++;continue}
+      k++;msg.textContent=`Storing photo ${k} of ${fresh}…`;
+      try{const r=await saving(()=>assetsNs.upload(s.blob,{type:'image/jpeg'}));doc.photos.push(r.id);URL.revokeObjectURL(s.url);shots[i]={id:r.id}}
+      catch(e){doc.photos.push(null);lost++}}
+    const views=VIEWS.filter((_,i)=>doc.photos[i]);
     let verdictOK=false;
-    if(sampleFn){
+    if(sampleFn&&$('#ciSeer').checked&&views.length){
       let caps=null;try{caps=await sampleFn.limits()}catch(e){}
       if(caps&&caps.images){
         msg.textContent='';live.hidden=false;live.textContent='The seer studies the photos… (this can take up to a minute)';$('#inspStop').hidden=false;inspCtl=new AbortController();
-        try{const blobs=shots.filter(Boolean).slice(0,caps.images.maxCount);
-          const r=await sampleFn.json(inspPrompt(f,prev,notes,blobs.length),{images:blobs,signal:inspCtl.signal,modelTier:'default',cache:false});
-          if(r&&typeof r==='object'){doc.title=String(r.title||'Inspection').slice(0,80);doc.bfLow=+r.bf_low||null;doc.bfHigh=+r.bf_high||null;
-            doc.bf=doc.bfLow&&doc.bfHigh?`${doc.bfLow}–${doc.bfHigh}%`:null;doc.verdict=String(r.verdict||'');doc.shoulder=String(r.shoulder||'');doc.action=String(r.action||'');verdictOK=!!doc.verdict;}}
+        try{const ids=doc.photos.filter(Boolean).slice(0,caps.images.maxCount||6),blobs=[];
+          for(const id of ids){const s=shots.find(x=>x&&x.id===id);blobs.push(s&&s.blob?s.blob:await (await fetch(blob(id))).blob())}
+          const f={...inspFacts(),date,kg,kg7,waist,neck,navy:nv,week:prev&&prev.kg!=null?kg-prev.kg:null};
+          const r=await sampleFn.json(inspPrompt(f,prev,notes,views.slice(0,blobs.length)),{images:blobs,signal:inspCtl.signal,modelTier:'default',cache:false});
+          if(r&&typeof r==='object'){doc.title=String(r.title||'Check-in').slice(0,80);doc.bfLow=+r.bf_low||null;doc.bfHigh=+r.bf_high||null;
+            doc.verdict=String(r.verdict||'');doc.shoulder=String(r.shoulder||'');doc.action=String(r.action||'');verdictOK=!!doc.verdict;doc.pending=false}}
         catch(e){const c=e&&e.code;
-          live.textContent=c==='cancelled'?'Stopped. The photos and numbers are still saved.':c==='not_granted'||c==='sampling_disabled'?'Claude isn’t allowed on this page, so the photos are saved without a verdict. Ask for one in the Einherjar chat.':c==='rate_limited'?'Claude is busy or your usage limit is reached. Saved without a verdict; try "Ask again" later.':c==='refused'?'Claude declined to assess these photos. They are saved; ask in the chat instead.':'The verdict didn’t come through. Saved without one; try "Ask again" later.';}
-        finally{$('#inspStop').hidden=true;inspCtl=null}}
-      else{live.hidden=false;live.textContent='This view can’t send photos to Claude, so they are saved without a verdict. Ask for one in the Einherjar chat.'}}
-    if(!verdictOK){doc.title=doc.title||'Awaiting verdict';doc.verdict='';doc.pending=true}
-    await saving(()=>dbRef.collection('checkins').doc(f.date).set(doc));
-    msg.textContent=verdictOK?'Sealed.':'Saved.';if(verdictOK)live.hidden=true;
-    shots.fill(null);document.querySelectorAll('#slots .slot').forEach(sl=>{sl.classList.remove('has');sl.querySelector('input').value=''});$('#inspNotes').value='';
-  }catch(e){msg.textContent='The inspection didn’t save. Check your connection and try again.'}
+          live.textContent=c==='cancelled'?'Stopped. The photos and numbers are still saved.':c==='not_granted'||c==='sampling_disabled'?'Claude isn’t allowed on this page, so the check-in is saved without a verdict.':c==='rate_limited'?'Claude is busy or your usage limit is reached. Saved without a verdict; edit and save again later to ask.':c==='refused'?'Claude declined to assess these photos. They are saved; ask in the chat instead.':'The verdict didn’t come through. Saved without one; edit and save again later to ask.';
+          doc.pending=true}
+        finally{$('#inspStop').hidden=true;inspCtl=null}}}
+    if(!doc.title)doc.title='Check-in';
+    doc.bfPct=bfIn!=null?bfIn:verdictOK&&doc.bfLow&&doc.bfHigh?+((doc.bfLow+doc.bfHigh)/2).toFixed(1):nv!=null?+nv.toFixed(1):null;
+    doc.bfSrc=bfIn!=null?'entered':verdictOK?'photos':nv!=null?'tape':null;
+    const sameAsRange=doc.bfLow&&doc.bfHigh&&doc.bfPct!=null&&Math.abs(doc.bfPct-(doc.bfLow+doc.bfHigh)/2)<.06;
+    doc.bf=sameAsRange?`${doc.bfLow}–${doc.bfHigh}%`:doc.bfPct!=null?`${fmt(doc.bfPct)}%`:null;
+    msg.textContent='Saving…';
+    await saving(()=>dbRef.collection('checkins').doc(date).set(doc));
+    const ref=dbRef.collection('weighins').doc(date);
+    try{await saving(async()=>{const cur=await ref.get(),c0=cur.exists?cur.data():{},add={date,kg};if(waist)add.waist=waist;if(neck)add.neck=neck;await ref.set({...c0,...add})})}catch(e){}
+    if(prevDoc&&assetsNs&&assetsNs.delete){const keep=new Set(doc.photos.filter(Boolean));for(const id of prevDoc.photos||[])if(id&&!keep.has(id)){try{await assetsNs.delete(id)}catch(e){}}}
+    msg.textContent=`Saved ${ciDay(date)} · ${fmt(kg)} kg · ${views.length} photo${views.length===1?'':'s'}`+(lost?` (${lost} couldn’t be stored)`:'')+'.';
+    if(verdictOK)live.hidden=true;
+    ciEdit=date;$('#ciSeer').checked=false;ciSync();
+  }catch(e){msg.textContent='The check-in didn’t save. Check your connection and try again.'}
   finally{btn.disabled=false}}
 $('#inspGo').addEventListener('click',sealInspection);
 $('#inspStop').addEventListener('click',()=>inspCtl&&inspCtl.abort());
-const blob=id=>id?((window.__blobUrls&&window.__blobUrls[id])||'/_blob/'+id):null;
+
+/* stats + chart */
+function renderCiStats(){const el=$('#ciStats'),es=checkins.filter(c=>c.kg!=null).sort((a,b)=>a.date<b.date?-1:1);
+  if(!es.length){el.innerHTML=`<div class="stat" style="grid-column:1/-1"><div class="label">No check-ins yet</div><div class="d">Your first Sunday check-in sets the baseline.</div></div>`;return}
+  const last=es[es.length-1],prev=es[es.length-2],first=es[0],sg=n=>n>0?'+':n<0?'−':'',ab=n=>fmt(Math.abs(n));
+  const st=(l,v,d,c)=>`<div class="stat"><div class="label">${l}</div><div class="v ${c||''}">${v}</div><div class="d">${d||''}</div></div>`;
+  const wk=prev?last.kg-prev.kg:null,tot=last.kg-first.kg;
+  const bfs=[...es].reverse().filter(c=>bfOf(c)!=null),b0=bfs[0],b1=bfs[1];
+  let h=st('Sunday weight',`${fmt(last.kg)}<small>kg</small>`,ciDay(last.date));
+  h+=st('This week',wk==null?'—':`${sg(wk)}${ab(wk)}<small>kg</small>`,prev?'vs '+ciShort(prev.date):'needs two check-ins',wk==null?'':wk<0?'down':wk>0?'up':'');
+  h+=st('Since first',`${sg(tot)}${ab(tot)}<small>kg</small>`,`from ${fmt(first.kg)} kg on ${ciShort(first.date)} · ${es.length} check-in${es.length===1?'':'s'}`,tot<0?'down':tot>0?'up':'');
+  if(b0){const bf=bfOf(b0),d=b1?bf-bfOf(b1):null,lean=b0.kg*(1-bf/100);
+    h+=st('Body fat',`${fmt(bf)}<small>%</small>`,d!=null?`${sg(d)}${ab(d)} pts vs ${ciShort(b1.date)}`:({entered:'entered',photos:'photo read',tape:'tape estimate'}[b0.bfSrc]||'photo read')+' · '+ciShort(b0.date),d==null?'':d<0?'down':d>0?'up':'');
+    h+=st('Lean / fat mass',`${fmt(lean)}<small>/ ${fmt(b0.kg-lean)} kg</small>`,'from '+ciShort(b0.date))}
+  else h+=st('Body fat','—','enter it, or add waist + neck');
+  const left=last.kg-TARGET,pct=Math.max(0,Math.min(100,(START_KG-last.kg)/(START_KG-TARGET)*100));
+  h+=`<div class="stat"><div class="label">To ${TARGET} kg</div><div class="v">${left<=0?'Reached':fmt(left)+'<small>kg</small>'}</div><div class="bar"><i style="width:${pct.toFixed(1)}%"></i></div><div class="d">${Math.round(pct)}% of the way from ${START_KG} kg</div></div>`;
+  el.innerHTML=h}
+function drawCiChart(){
+  const svg=$('#ciChart');if(!svg)return;const W=Math.max(300,Math.round(svg.clientWidth||720)),H=W<520?230:260,L=40,R=40,T=14,B=30;svg.setAttribute('viewBox',`0 0 ${W} ${H}`);
+  const es=checkins.filter(c=>c.kg!=null).sort((a,b)=>a.date<b.date?-1:1);
+  if(!es.length){svg.innerHTML=`<text x="${W/2}" y="${H/2}" fill="var(--ti)" text-anchor="middle" font-family="var(--f-body)" font-size="14">The chart appears with your first Sunday check-in.</text>`;return}
+  const t0=new Date(es[0].date).getTime(),t1=Math.max(new Date(es[es.length-1].date).getTime(),t0+7*864e5);
+  const kgs=es.map(e=>e.kg);let lo=Math.floor(Math.min(TARGET,...kgs)-1),hi=Math.ceil(Math.max(...kgs)+1);
+  const x=t=>L+(t-t0)/(t1-t0)*(W-L-R),y=k=>T+(hi-k)/(hi-lo)*(H-T-B);
+  let g='';const step=(hi-lo)>12?2:1;
+  for(let k=lo;k<=hi;k+=step)g+=`<line x1="${L}" x2="${W-R}" y1="${y(k)}" y2="${y(k)}" stroke="var(--ti-dark)" stroke-opacity=".6"/><text x="${L-8}" y="${y(k)+4}" fill="var(--ti)" text-anchor="end" font-family="var(--f-num)" font-size="15">${k}</text>`;
+  const nT=Math.min(W<520?4:6,es.length);for(let i=0;i<nT;i++){const t=nT===1?t0:t0+(t1-t0)*i/(nT-1),d=new Date(t);
+    g+=`<text x="${x(t)}" y="${H-8}" fill="var(--ti)" text-anchor="middle" font-family="var(--f-num)" font-size="15">${d.getDate()}/${d.getMonth()+1}</text>`}
+  g+=`<line x1="${L}" x2="${W-R}" y1="${y(TARGET)}" y2="${y(TARGET)}" stroke="var(--ti)" stroke-dasharray="5 5"/>`;
+  const bfp=es.filter(e=>bfOf(e)!=null);
+  if(bfp.length){const vs=bfp.map(bfOf);let bl=Math.floor(Math.min(...vs)-2),bh=Math.ceil(Math.max(...vs)+2);const yb=v=>T+(bh-v)/(bh-bl)*(H-T-B);
+    for(const v of[bl,Math.round((bl+bh)/2),bh])g+=`<text x="${W-R+8}" y="${yb(v)+4}" fill="var(--ti-hi)" font-family="var(--f-num)" font-size="15">${v}%</text>`;
+    const pts=bfp.map(e=>[x(new Date(e.date).getTime()),yb(bfOf(e))]);
+    if(pts.length>1)g+=`<polyline points="${pts.map(p=>p.join(',')).join(' ')}" fill="none" stroke="var(--ti-hi)" stroke-width="1.8" stroke-dasharray="3 4" stroke-linejoin="round"/>`;
+    g+=pts.map(p=>`<rect x="${p[0]-3}" y="${p[1]-3}" width="6" height="6" fill="var(--ti-hi)" transform="rotate(45 ${p[0]} ${p[1]})"/>`).join('')}
+  const ap=es.map(e=>[x(new Date(e.date).getTime()),y(e.kg)]);
+  if(ap.length>1){g+=`<path d="M${ap[0][0]},${y(lo)} ${ap.map(p=>`L${p[0]},${p[1]}`).join(' ')} L${ap[ap.length-1][0]},${y(lo)} Z" fill="var(--emerald)" fill-opacity=".12"/>`;
+    g+=`<polyline points="${ap.map(p=>p.join(',')).join(' ')}" fill="none" stroke="var(--emerald-hi)" stroke-width="2.5" stroke-linejoin="round"/>`}
+  g+=ap.map((p,i)=>`<circle cx="${p[0]}" cy="${p[1]}" r="${i===ap.length-1?5:3.5}" fill="var(--emerald-hi)" stroke="var(--void)" stroke-width="2"><title>${ciShort(es[i].date)} · ${fmt(es[i].kg)} kg</title></circle>`).join('');
+  svg.innerHTML=g}
+
+/* timeline, compare, lightbox */
 function renderVerdicts(list){
-  checkins=list;renderInspMeta();renderHonour();
-  if(!list.length){$('#verdicts').innerHTML='<p class="muted">No inspections yet. Inspect every Sunday: weigh-in, waist + neck, four photos. The first one with the new plan sets the baseline.</p>';$('#cmpPlate').hidden=true;renderBfNow();return;}
-  $('#verdicts').innerHTML=list.map((c,i)=>{const ph=(c.photos||[]);
-    return `<details${i===0?' open':''}><summary><span class="mono">${esc(c.date)}</span> · ${esc(c.title||'Inspection')} ${c.bf?`<span class="pill ok">${esc(c.bf)}</span>`:''}${c.pending?' <span class="pill warn">verdict pending</span>':''}</summary>
+  checkins=list;renderHonour();ciSync();renderCiStats();drawCiChart();
+  if(!list.length){$('#verdicts').innerHTML='<p class="muted">No check-ins yet. Every Sunday: weight, waist + neck, six photos. The first one sets the baseline.</p>';$('#cmpPlate').hidden=true;renderBfNow();return;}
+  $('#verdicts').innerHTML=list.map((c,i)=>{const ph=photosOf(c),p=list[i+1],d=p&&c.kg!=null&&p.kg!=null?c.kg-p.kg:null;
+    return `<details${i===0?' open':''} data-date="${esc(c.date)}"><summary><span class="mono">${esc(ciDay(c.date))}</span>${c.kg!=null?` · <span class="mono">${fmt(c.kg)} kg</span>`:''}${d!=null?` <span class="mono ${d<0?'down':d>0?'up':''}">(${d>0?'+':d<0?'−':''}${fmt(Math.abs(d))})</span>`:''} · ${esc(c.title||'Check-in')} ${c.bf?`<span class="pill ok">${esc(c.bf)}</span>`:''}${c.pending?' <span class="pill warn">verdict pending</span>':''}</summary>
     <div style="padding:8px 0 4px">
-     ${ph.some(Boolean)?`<div class="thumbs">${ph.map((id,j)=>id?`<img src="${blob(id)}" alt="${VIEWS[j]} photo, ${esc(c.date)}" loading="lazy">`:'<div></div>').join('')}</div>`:''}
-     <div class="facts inspmeta">${[c.kg!=null?`${fmt(c.kg)} kg`:null,c.kg7!=null?`7-day ${fmt(c.kg7)} kg`:null,c.waist?`waist ${fmt(c.waist)} cm`:null,c.navy!=null?`tape ${fmt(c.navy)}%`:null,c.bf?`photos ${esc(c.bf)}`:null].filter(Boolean).map(x=>`<span>${x}</span>`).join('')}</div>
+     ${ph.length?`<div class="thumbs six">${VIEWS.map(v=>ph.find(x=>x.view===v)).filter(Boolean).map(x=>imgTag(x.id,`${x.view}, ${c.date}`)).join('')}</div>`:''}
+     <div class="facts inspmeta">${[c.kg7!=null?`7-day ${fmt(c.kg7)} kg`:null,c.waist?`waist ${fmt(c.waist)} cm`:null,c.neck?`neck ${fmt(c.neck)} cm`:null,c.navy!=null?`tape ${fmt(c.navy)}%`:null,c.bf?`body fat ${esc(c.bf)}`:null].filter(Boolean).map(x=>`<span>${x}</span>`).join('')}</div>
      ${(c.verdict||'').split(/\n+/).filter(Boolean).map(p=>`<p>${esc(p)}</p>`).join('')}
      ${c.shoulder?`<p><b>Shoulders:</b> ${esc(c.shoulder)}</p>`:''}
      ${c.action?`<p><b>Next week:</b> ${esc(c.action)}</p>`:''}
      ${c.notes?`<p class="muted"><b>Your notes:</b> ${esc(c.notes)}</p>`:''}
+     <div class="ciacts"><button type="button" class="btn ghost" data-edit="${esc(c.date)}">Edit</button><button type="button" class="btn ghost" data-del="${esc(c.date)}">Delete</button></div>
     </div></details>`}).join('');
-  // compare
-  const withPh=list.filter(c=>(c.photos||[]).some(Boolean));
+  hydrate($('#verdicts'));
+  const withPh=list.filter(c=>photosOf(c).length);
   $('#cmpPlate').hidden=withPh.length<2;
-  if(withPh.length>=2){const opts=withPh.map(c=>`<option value="${esc(c.date)}">${esc(c.date)}${c.bf?' · '+esc(c.bf):''}</option>`).join('');
+  if(withPh.length>=2){const opts=withPh.map(c=>`<option value="${esc(c.date)}">${esc(ciShort(c.date))}${c.kg!=null?' · '+fmt(c.kg)+' kg':''}</option>`).join('');
     const a=$('#cmpA'),b=$('#cmpB'),va=a.value,vb=b.value;a.innerHTML=opts;b.innerHTML=opts;
     a.value=withPh.some(c=>c.date===va)?va:withPh[withPh.length-1].date;b.value=withPh.some(c=>c.date===vb)?vb:withPh[0].date;drawCmp();}
   renderBfNow();}
 function drawCmp(){const A=checkins.find(c=>c.date===$('#cmpA').value),B=checkins.find(c=>c.date===$('#cmpB').value);if(!A||!B)return;
-  $('#cmp').innerHTML=VIEWS.map((v,j)=>{const x=(A.photos||[])[j],y=(B.photos||[])[j];if(!x&&!y)return'';
-    return `<figure><div class="pair">${x?`<img src="${blob(x)}" alt="${v}, ${esc(A.date)}">`:'<div></div>'}${y?`<img src="${blob(y)}" alt="${v}, ${esc(B.date)}">`:'<div></div>'}</div><figcaption>${v} · ${esc(A.date)} → ${esc(B.date)}</figcaption></figure>`}).join('');}
+  const pa=photosOf(A),pb=photosOf(B),cell=(p,c)=>p?imgTag(p.id,`${p.view}, ${c.date}`):'<div class="miss">—</div>';
+  $('#cmp').innerHTML=VIEWS.map(v=>{const x=pa.find(p=>p.view===v),y=pb.find(p=>p.view===v);if(!x&&!y)return'';
+    return `<figure><div class="pair">${cell(x,A)}${cell(y,B)}</div><figcaption>${v} · ${esc(ciShort(A.date))} → ${esc(ciShort(B.date))}</figcaption></figure>`}).join('');
+  hydrate($('#cmp'))}
 $('#cmpA').addEventListener('change',drawCmp);$('#cmpB').addEventListener('change',drawCmp);
+let lbList=[],lbI=0;
+function lbShow(){const it=lbList[lbI];if(!it)return;const im=$('#ciLbImg'),u=blob(it.id);if(u)im.src=u;else{im.removeAttribute('src');window.__photo&&window.__photo(it.id).then(v=>{if(v&&lbList[lbI]===it)im.src=v})}$('#ciLbCap').textContent=it.cap}
+function lbOpen(root,img){const imgs=[...root.querySelectorAll('img[data-pid]')];lbList=imgs.map(i=>({id:i.dataset.pid,cap:i.alt}));lbI=imgs.indexOf(img);lbShow();$('#ciLb').hidden=false}
+const lbClose=()=>{$('#ciLb').hidden=true};
+$('#ciLbX').addEventListener('click',lbClose);
+$('#ciLbP').addEventListener('click',e=>{e.stopPropagation();lbI=(lbI-1+lbList.length)%lbList.length;lbShow()});
+$('#ciLbN').addEventListener('click',e=>{e.stopPropagation();lbI=(lbI+1)%lbList.length;lbShow()});
+$('#ciLb').addEventListener('click',e=>{if(e.target.id==='ciLb')lbClose()});
+document.addEventListener('keydown',e=>{if($('#ciLb').hidden)return;if(e.key==='Escape')lbClose();if(e.key==='ArrowLeft')$('#ciLbP').click();if(e.key==='ArrowRight')$('#ciLbN').click()});
+(()=>{let x0=null;const lb=$('#ciLb');lb.addEventListener('touchstart',e=>{x0=e.touches[0].clientX},{passive:true});
+  lb.addEventListener('touchend',e=>{if(x0==null)return;const dx=e.changedTouches[0].clientX-x0;if(Math.abs(dx)>50)(dx>0?$('#ciLbP'):$('#ciLbN')).click();x0=null},{passive:true})})();
+$('#verdicts').addEventListener('click',async ev=>{
+  const im=ev.target.closest('img[data-pid]');if(im){lbOpen(im.closest('details'),im);return}
+  const ed=ev.target.closest('[data-edit]');if(ed){const c=checkins.find(x=>x.date===ed.dataset.edit);if(c)ciLoad(c);return}
+  const del=ev.target.closest('[data-del]');if(!del)return;const d=del.dataset.del;
+  if(ciDelPending!==d){ciDelPending=d;del.textContent='Tap again to delete';setTimeout(()=>{if(ciDelPending===d){ciDelPending=null;del.textContent='Delete'}},3500);return}
+  ciDelPending=null;del.textContent='…';const c=checkins.find(x=>x.date===d);
+  try{await saving(()=>dbRef.collection('checkins').doc(d).delete());
+    if(assetsNs&&assetsNs.delete&&c)for(const id of c.photos||[])if(id){try{await assetsNs.delete(id)}catch(e){}}
+    if(ciEdit===d)ciReset()}
+  catch(e){del.textContent='Delete';$('#inspMsg').textContent='Could not delete that check-in.'}});
+$('#cmp').addEventListener('click',ev=>{const im=ev.target.closest('img[data-pid]');if(im)lbOpen($('#cmp'),im)});
 function renderBfNow(){const el=$('#bfNow');if(!el)return;const c=checkins.find(x=>x.bf);const tape=[...allDays].reverse().find(e=>e.waist&&e.neck);
-  el.innerHTML=(c||tape)?`<span class="pill brass">Current read</span>${c?`Photos ${esc(c.bf)} (${esc(c.date)})`:'No photo read yet'}${tape?` · tape ${fmt(navy(tape.waist,tape.neck))}% (${tape.date})`:''}`:'The ruling uses your latest inspection. None yet.';}
+  el.innerHTML=(c||tape)?`<span class="pill brass">Current read</span>${c?`Check-in ${esc(c.bf)} (${esc(c.date)})`:'No check-in read yet'}${tape?` · tape ${fmt(navy(tape.waist,tape.neck))}% (${tape.date})`:''}`:'The ruling uses your latest check-in. None yet.';}
+ciReset();
 
 
 /* ---------- honour & rank ---------- */
@@ -1352,7 +1574,7 @@ function renderHonour(){}
 /* ---------- tabs ---------- */
 const tabs=[...document.querySelectorAll('nav.tabs button')];
 function show(id){tabs.forEach(b=>b.setAttribute('aria-selected',b.dataset.tab===id));document.querySelectorAll('section.panel').forEach(s=>s.hidden=s.id!=='tab-'+id);
-  try{localStorage.setItem('einherjar-tab',id)}catch(e){}}
+  try{localStorage.setItem('einherjar-tab',id)}catch(e){}if(id==='checkins')requestAnimationFrame(drawCiChart)}
 tabs.forEach(b=>b.addEventListener('click',()=>show(b.dataset.tab)));
 /* swipe sideways to change tab (swipe right = next tab, swipe left = previous) */
 (()=>{let x0=0,y0=0,t0=0,skip=false;
@@ -1373,7 +1595,7 @@ if(tabs.some(b=>b.dataset.tab===hashTab))show(hashTab);else if(saved&&tabs.some(
 
 renderProgram();renderDecree();renderWeights();renderHabits();
 let dayKey=iso(new Date());setInterval(()=>{const k=iso(new Date());if(k!==dayKey){dayKey=k;hDay=k;renderProgram();renderDecree();renderWeights();renderHabits();$('#wDate').value=k}},60000);
-let rsT=null;addEventListener('resize',()=>{clearTimeout(rsT);rsT=setTimeout(drawChart,150)});
+let rsT=null;addEventListener('resize',()=>{clearTimeout(rsT);rsT=setTimeout(()=>{drawChart();drawCiChart()},150)});
 $('#hPrev').addEventListener('click',()=>{hDay=shift(hDay,-1);renderHabits()});
 $('#hNext').addEventListener('click',()=>{const t=iso(new Date());if(hDay<t){hDay=shift(hDay,1);renderHabits()}});
 $('#wDate').value=iso(new Date());
@@ -1417,7 +1639,7 @@ document.getElementById('wSteps').innerHTML=optsFor('steps','');document.getElem
     try{await dl.save({filename:`einherjar-log-${iso(new Date())}.csv`,data:new Blob([cols.join(',')+'\n'+rows.join('\n')],{type:'text/csv'})});$('#exportMsg').textContent='Saved.'}
     catch(e){$('#exportMsg').textContent=e&&e.code==='cancelled'||e&&e.code==='declined'?'':'Export didn\u2019t go through.'}})}).catch(()=>{});
   watch(()=>db.collection('weighins').orderBy('date'),s=>{
-    allDays=s.docs.map(d=>d.data()).filter(e=>e&&e.date);entries=allDays.filter(e=>typeof e.kg==='number');renderWeights();renderHabits();});
+    allDays=s.docs.map(d=>d.data()).filter(e=>e&&e.date);entries=allDays.filter(e=>typeof e.kg==='number');renderWeights();renderHabits();ciPrefill();});
   watch(()=>db.collection('checkins').orderBy('date','desc'),s=>renderVerdicts(s.docs.map(d=>d.data())));
   watch(()=>db.doc('sync/polar'),s=>s.exists&&renderPolar(s.data()));
   $('#wForm').addEventListener('submit',async ev=>{

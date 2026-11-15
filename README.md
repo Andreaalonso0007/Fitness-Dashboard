@@ -5,7 +5,7 @@ https://andreaalonso0007.github.io/Fitness-Dashboard/
 
 ## How it works
 - **Standalone:** no server. Logs (weigh-ins, steps, sleep, habits, check-ins) are saved in the browser.
-- **Across devices:** with a GitHub token saved on a device, the page keeps an encrypted copy of the logs in `data/state.enc` and merges changes between devices. Photos stay on the device that took them.
+- **Across devices:** with a GitHub token saved on a device, the page keeps an encrypted copy of the logs in `data/state.enc` and merges changes between devices. Check-in photos are encrypted the same way, one file each in `data/photos/`, so they show on every device.
 - **Polar Loop:** a scheduled GitHub Action (`.github/workflows/polar-sync.yml`) pulls sleep, HRV, resting heart rate and steps from the Polar AccessLink API into `data/polar.enc`. The **Sync now** button runs it on demand.
 - **Privacy:** everything under `data/` is encrypted with a passphrase (repository secret `DATA_KEY`). The passphrase is typed once per device and never stored in the repo.
 
