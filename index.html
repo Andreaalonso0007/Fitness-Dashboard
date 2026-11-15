@@ -1004,7 +1004,7 @@ const SESSIONS={
 const WEEK=[ // Sun..Sat
  {k:'REST',t:'Rest · Inspection · Weekly review',d:'Weigh-in, waist + neck, four photos, Sunday review of the week. Shoulder daily 8 min.'},
  {k:'FA',t:'Full Body A',d:''},
- {k:'MOVE',t:'Walk day',d:'12,000 steps: office walk plus a 30 min evening walk. ISO 27001 course at 18:00. Shoulder daily 8 min.'},
+ {k:'MOVE',t:'Walk day',d:'12,000 steps: office walk plus a 30 min evening walk.'+(iso(new Date())>='2026-12-01'?' ISO 27001 course at 18:00.':'')+' Shoulder daily 8 min.'},
  {k:'TO',t:'Torso',d:''},
  {k:'MOVE',t:'Walk day',d:'12,000 steps: office walk plus a 40 min evening walk. Shoulder daily 8 min.'},
  {k:'FB',t:'Full Body B',d:''},
@@ -1025,9 +1025,9 @@ const HABITS=[
  {k:'protein',name:'178 g protein',hint:'auto if logged',r:'ᛃ',semi:e=>e&&e.protein!=null?e.protein>=178:null},
  {k:'creatine',name:'Creatine 5 g',hint:'tap when done',r:'ᚢ'},
  {k:'french',name:'French 30 min',hint:'Mon–Fri · class, metro or home',r:'ᚲ',days:[1,2,3,4,5]},
- {k:'iso',name:'ISO 27001 LI',hint:'Tue · Thu · Fri',r:'ᛁ',days:[2,4,5]}];
+ {k:'iso',name:'ISO 27001 LI',hint:'Tue · Thu · Fri',r:'ᛁ',days:[2,4,5],from:'2026-12-01'}];
 const kept=(e,h)=>{if(h.auto)return !!h.auto(e);if(h.semi){const v=h.semi(e);if(v!==null)return v}return !!(e&&e.habits&&e.habits[h.k])};
-const due=(h,d)=>!h.days||h.days.includes(new Date(d+'T12:00:00').getDay());
+const due=(h,d)=>(!h.from||d>=h.from)&&(!h.days||h.days.includes(new Date(d+'T12:00:00').getDay()));
 const dueH=d=>HABITS.filter(h=>due(h,d));
 let hDay=null,dbRef=null,powerLive=false;
 const dayDoc=d=>allDays.find(e=>e.date===d)||null;
